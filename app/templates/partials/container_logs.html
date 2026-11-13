@@ -1,0 +1,8 @@
+{% if error %}
+<div class="p-3 rounded bg-red-900/50 border border-red-700 text-red-200 text-sm">{{ error }}</div>
+{% else %}
+<div class="mt-4">
+    <div class="text-xs text-slate-400 mb-1">Logs for {{ container_id }}</div>
+    <pre class="p-3 rounded bg-black/50 border border-slate-800 text-xs text-slate-200 overflow-x-auto max-h-64">{{ logs }}</pre>
+</div>
+{% endif %}

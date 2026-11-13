@@ -1,0 +1,48 @@
+{% if error %}
+<div class="p-3 rounded bg-red-900/50 border border-red-700 text-red-200 text-sm">{{ error }}</div>
+{% elif containers|length == 0 %}
+<div class="text-sm text-slate-500 py-8 text-center">No containers found or Docker unavailable.</div>
+{% else %}
+<table class="w-full text-sm text-left">
+    <thead>
+        <tr class="text-slate-400 border-b border-slate-800">
+            <th class="pb-2 font-medium">Name</th>
+            <th class="pb-2 font-medium">Image</th>
+            <th class="pb-2 font-medium">Status</th>
+            <th class="pb-2 font-medium text-right">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in containers %}
+        <tr class="border-b border-slate-800/50">
+            <td class="py-2 text-white">{{ c.name }}</td>
+            <td class="py-2 text-slate-400">{{ c.image }}</td>
+            <td class="py-2">
+                <span class="px-2 py-0.5 rounded text-xs font-medium
+                    {% if c.status == 'running' %}bg-emerald-900/50 text-emerald-300
+                    {% elif c.status == 'exited' %}bg-slate-800 text-slate-400
+                    {% else %}bg-amber-900/50 text-amber-300{% endif %}">
+                    {{ c.status }}
+                </span>
+            </td>
+            <td class="py-2 text-right whitespace-nowrap">
+                {% if c.status == 'running' %}
+                <button hx-post="/containers/{{ c.id }}/stop" hx-target="#container-list" hx-swap="outerHTML"
+                        class="px-2 py-1 rounded bg-amber-700 hover:bg-amber-600 text-white text-xs">Stop</button>
+                <button hx-post="/containers/{{ c.id }}/restart" hx-target="#container-list" hx-swap="outerHTML"
+                        class="px-2 py-1 rounded bg-sky-700 hover:bg-sky-600 text-white text-xs">Restart</button>
+                {% else %}
+                <button hx-post="/containers/{{ c.id }}/start" hx-target="#container-list" hx-swap="outerHTML"
+                        class="px-2 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-xs">Start</button>
+                {% endif %}
+                <button hx-get="/containers/{{ c.id }}/logs" hx-target="#container-logs" hx-swap="outerHTML"
+                        class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white text-xs">Logs</button>
+                <button hx-post="/containers/{{ c.id }}/remove" hx-target="#container-list" hx-swap="outerHTML"
+                        hx-confirm="Remove container {{ c.name }}?"
+                        class="px-2 py-1 rounded bg-red-700 hover:bg-red-600 text-white text-xs">Remove</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}

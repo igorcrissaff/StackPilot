@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <header class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-white">StackPilot</h1>
+            <p class="text-sm text-slate-400">Homelab Control Panel</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="text-sm text-slate-400">{{ user }}</span>
+            <form method="post" action="/logout">
+                <button type="submit" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm text-slate-200">
+                    Logout
+                </button>
+            </form>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-white">Containers</h2>
+                <button
+                    hx-get="/containers"
+                    hx-target="#container-list"
+                    hx-swap="outerHTML"
+                    class="px-3 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-sm text-white">
+                    Refresh
+                </button>
+            </div>
+            <div id="container-list">
+                {% include "partials/container_list.html" %}
+            </div>
+        </section>
+
+        <section class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-white">Traefik Routes</h2>
+                <button
+                    hx-get="/routes"
+                    hx-target="#route-list"
+                    hx-swap="outerHTML"
+                    class="px-3 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-sm text-white">
+                    Refresh
+                </button>
+            </div>
+            <div id="route-list">
+                {% include "partials/route_list.html" %}
+            </div>
+
+            <h3 class="text-sm font-semibold text-slate-300 mt-6 mb-3">Add Route</h3>
+            <form hx-post="/routes" hx-target="#route-list" hx-swap="outerHTML" class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="text" name="name" placeholder="name" required
+                           class="px-3 py-2 rounded bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-sky-500">
+                    <input type="text" name="domain" placeholder="domain" required
+                           class="px-3 py-2 rounded bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-sky-500">
+                    <input type="text" name="target_url" placeholder="http://service:port" required
+                           class="px-3 py-2 rounded bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-sky-500 col-span-2">
+                </div>
+                <label class="flex items-center gap-2 text-sm text-slate-300">
+                    <input type="checkbox" name="tls" checked class="rounded bg-slate-800 border-slate-700">
+                    Enable TLS (Let's Encrypt)
+                </label>
+                <button type="submit" class="w-full py-2 px-4 rounded bg-emerald-600 hover:bg-emerald-500 text-sm text-white font-medium">
+                    Add Route
+                </button>
+            </form>
+        </section>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% if error %}
+<div class="p-3 rounded bg-red-900/50 border border-red-700 text-red-200 text-sm">{{ error }}</div>
+{% elif routes|length == 0 %}
+<div class="text-sm text-slate-500 py-8 text-center">No routes configured.</div>
+{% else %}
+<table class="w-full text-sm text-left">
+    <thead>
+        <tr class="text-slate-400 border-b border-slate-800">
+            <th class="pb-2 font-medium">Name</th>
+            <th class="pb-2 font-medium">Domain</th>
+            <th class="pb-2 font-medium">Target</th>
+            <th class="pb-2 font-medium">TLS</th>
+            <th class="pb-2 font-medium text-right">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in routes %}
+        <tr class="border-b border-slate-800/50">
+            <td class="py-2 text-white">{{ r.name }}</td>
+            <td class="py-2 text-slate-300">{{ r.domain }}</td>
+            <td class="py-2 text-slate-400">{{ r.target_url }}</td>
+            <td class="py-2">
+                {% if r.tls %}
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-emerald-900/50 text-emerald-300">HTTPS</span>
+                {% else %}
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-slate-800 text-slate-400">HTTP</span>
+                {% endif %}
+            </td>
+            <td class="py-2 text-right">
+                <button hx-delete="/routes/{{ r.name }}" hx-target="#route-list" hx-swap="outerHTML"
+                        hx-confirm="Delete route {{ r.name }}?"
+                        class="px-2 py-1 rounded bg-red-700 hover:bg-red-600 text-white text-xs">Delete</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}

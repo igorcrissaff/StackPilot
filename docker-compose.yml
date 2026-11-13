@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  stackpilot:
+    build: .
+    container_name: stackpilot
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_dynamic:/etc/traefik/dynamic
+    depends_on:
+      - traefik
+
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - traefik_dynamic:/etc/traefik/dynamic
+    networks:
+      - internal
+
+networks:
+  internal:
+
+volumes:
+  traefik_dynamic:
