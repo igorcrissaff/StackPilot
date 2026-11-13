@@ -9,17 +9,27 @@ services:
     env_file:
       - .env
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock
       - traefik_dynamic:/etc/traefik/dynamic
+    networks:
+      - internal
     depends_on:
       - traefik
 
   traefik:
     image: traefik:v3.0
     container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
     ports:
       - "80:80"
       - "443:443"
+      - "8080:8080"
     volumes:
       - traefik_dynamic:/etc/traefik/dynamic
     networks:
@@ -27,6 +37,7 @@ services:
 
 networks:
   internal:
+    name: stackpilot_net
 
 volumes:
   traefik_dynamic:

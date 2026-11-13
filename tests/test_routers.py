@@ -73,3 +73,26 @@ def test_create_and_delete_route():
         mock_traefik.delete_route.assert_called_once_with("plex")
     finally:
         app.dependency_overrides.clear()
+
+
+def test_edit_route_form():
+    mock_traefik = MagicMock()
+    mock_traefik.get_route.return_value = RouteConfig(
+        name="plex", domain="plex.home.arpa", target_url="http://plex:32400", tls=True
+    )
+
+    app.dependency_overrides[get_traefik_service] = lambda: mock_traefik
+    try:
+        client = _authed_client()
+        resp = client.get("/routes/plex/edit")
+        assert resp.status_code == 200
+        assert "plex.home.arpa" in resp.text
+        assert "http://plex:32400" in resp.text
+        assert "Salvar" in resp.text
+        assert "Cancelar" in resp.text
+
+        mock_traefik.get_route.return_value = None
+        resp_404 = client.get("/routes/missing/edit")
+        assert resp_404.status_code == 404
+    finally:
+        app.dependency_overrides.clear()

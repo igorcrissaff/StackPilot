@@ -15,7 +15,7 @@
     </thead>
     <tbody>
         {% for r in routes %}
-        <tr class="border-b border-slate-800/50">
+        <tr id="route-row-{{ r.name }}" class="border-b border-slate-800/50">
             <td class="py-2 text-white">{{ r.name }}</td>
             <td class="py-2 text-slate-300">{{ r.domain }}</td>
             <td class="py-2 text-slate-400">{{ r.target_url }}</td>
@@ -26,7 +26,9 @@
                 <span class="px-2 py-0.5 rounded text-xs font-medium bg-slate-800 text-slate-400">HTTP</span>
                 {% endif %}
             </td>
-            <td class="py-2 text-right">
+            <td class="py-2 text-right whitespace-nowrap">
+                <button hx-get="/routes/{{ r.name }}/edit" hx-target="#route-row-{{ r.name }}" hx-swap="outerHTML"
+                        class="px-2 py-1 rounded bg-sky-700 hover:bg-sky-600 text-white text-xs mr-1">Edit</button>
                 <button hx-delete="/routes/{{ r.name }}" hx-target="#route-list" hx-swap="outerHTML"
                         hx-confirm="Delete route {{ r.name }}?"
                         class="px-2 py-1 rounded bg-red-700 hover:bg-red-600 text-white text-xs">Delete</button>

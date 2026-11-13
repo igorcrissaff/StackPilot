@@ -26,6 +26,22 @@ def test_delete_route(tmp_path):
     assert svc.delete_route("nonexistent") is False
 
 
+def test_get_route(tmp_path):
+    svc = TraefikService(dynamic_dir=tmp_path)
+    route = RouteConfig(name="grafana", domain="grafana.home.arpa", target_url="http://grafana:3000", tls=True)
+    svc.upsert_route(route)
+
+    found = svc.get_route("grafana")
+    assert found is not None
+    assert found.name == "grafana"
+    assert found.domain == "grafana.home.arpa"
+    assert found.target_url == "http://grafana:3000"
+    assert found.tls is True
+
+    not_found = svc.get_route("nonexistent")
+    assert not_found is None
+
+
 def test_invalid_domain_or_url_rejected(tmp_path):
     with pytest.raises(ValidationError):
         RouteConfig(name="bad", domain="invalid domain!", target_url="http://app:80")

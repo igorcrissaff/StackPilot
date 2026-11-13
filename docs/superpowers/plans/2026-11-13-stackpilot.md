@@ -36,7 +36,7 @@
 **Interfaces:**
 - Produces: `Settings` (Pydantic `BaseSettings` with `stackpilot_user: str`, `stackpilot_password: str`, `traefik_dynamic_dir: Path`, `secret_key: str`), `get_settings() -> Settings`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 ```python
 from app.config import get_settings
 
@@ -47,18 +47,18 @@ def test_settings_defaults(monkeypatch):
     assert settings.stackpilot_password == "secret123"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 Run: `pytest tests/test_config.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'app'`
 
-- [ ] **Step 3: Create `pyproject.toml`, `app/__init__.py`, and `app/config.py`**
+- [x] **Step 3: Create `pyproject.toml`, `app/__init__.py`, and `app/config.py`**
 Define `pyproject.toml` with dependencies (`fastapi`, `uvicorn[standard]`, `jinja2`, `python-multipart`, `docker`, `pyyaml`, `pydantic-settings`, `pytest`, `httpx`). Implement `Settings` and `get_settings()` in `app/config.py`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 Run: `pytest tests/test_config.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add pyproject.toml app/__init__.py app/config.py tests/test_config.py
 git commit -m "chore: scaffold project and configuration"
@@ -76,21 +76,21 @@ git commit -m "chore: scaffold project and configuration"
 **Interfaces:**
 - Produces: `ContainerInfo` (Pydantic model: `id`, `name`, `image`, `status`, `state`), `DockerService` with `list_containers() -> list[ContainerInfo]`, `container_action(container_id: str, action: str) -> None`, `get_logs(container_id: str, tail: int = 100) -> str`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 Test `list_containers`, `container_action` (start/stop/restart/remove), `get_logs`, and graceful handling when Docker daemon is unavailable (`DockerException`) or container is not found (`NotFound`) using mocked `docker.DockerClient`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 Run: `pytest tests/test_docker_service.py -v`
 Expected: FAIL
 
-- [ ] **Step 3: Implement `DockerService` in `app/services/docker_service.py`**
+- [x] **Step 3: Implement `DockerService` in `app/services/docker_service.py`**
 Wrap `docker.from_env()` with clean exception mapping (`DockerUnavailableError`, `ContainerNotFoundError`).
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 Run: `pytest tests/test_docker_service.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add app/services/ tests/test_docker_service.py
 git commit -m "feat: add DockerService for container management"
@@ -107,21 +107,21 @@ git commit -m "feat: add DockerService for container management"
 **Interfaces:**
 - Produces: `RouteConfig` (Pydantic model: `name: str`, `domain: str`, `target_url: str`, `tls: bool = True`), `TraefikService(dynamic_dir: Path)` with `list_routes() -> list[RouteConfig]`, `upsert_route(route: RouteConfig) -> None`, `delete_route(name: str) -> bool`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 Test `upsert_route` writes valid Traefik v2/v3 YAML (`http.routers`, `http.services`), `list_routes` parses it back, `delete_route` removes it, and invalid domain/URL raises `ValidationError` without writing to disk.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 Run: `pytest tests/test_traefik_service.py -v`
 Expected: FAIL
 
-- [ ] **Step 3: Implement `TraefikService` in `app/services/traefik_service.py`**
+- [x] **Step 3: Implement `TraefikService` in `app/services/traefik_service.py`**
 Use Pydantic regex/URL validation and `yaml.safe_dump` / `yaml.safe_load` to manage `stackpilot-routes.yml` inside `dynamic_dir`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 Run: `pytest tests/test_traefik_service.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add app/services/traefik_service.py tests/test_traefik_service.py
 git commit -m "feat: add TraefikService for dynamic YAML route management"
@@ -142,21 +142,21 @@ git commit -m "feat: add TraefikService for dynamic YAML route management"
 - Consumes: `get_settings() -> Settings`
 - Produces: `app: FastAPI`, `require_auth(request: Request) -> str`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 Test that `GET /` redirects to `/login` when unauthenticated, `POST /login` with valid credentials sets session cookie and redirects to `/`, and invalid credentials return 401.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 Run: `pytest tests/test_auth.py -v`
 Expected: FAIL
 
-- [ ] **Step 3: Implement `app/auth.py`, `app/main.py`, and base/login templates**
+- [x] **Step 3: Implement `app/auth.py`, `app/main.py`, and base/login templates**
 Use `itsdangerous` signed session cookies via Starlette's `SessionMiddleware`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 Run: `pytest tests/test_auth.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add app/auth.py app/main.py app/templates/ tests/test_auth.py
 git commit -m "feat: add session authentication and FastAPI app shell"
@@ -180,21 +180,21 @@ git commit -m "feat: add session authentication and FastAPI app shell"
 **Interfaces:**
 - Consumes: `DockerService`, `TraefikService`, `require_auth`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 Test authenticated `GET /`, `POST /containers/{id}/{action}`, `GET /containers/{id}/logs`, `POST /routes`, and `DELETE /routes/{name}` using `TestClient` with mocked services.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 Run: `pytest tests/test_routers.py -v`
 Expected: FAIL
 
-- [ ] **Step 3: Implement routers and HTMX templates**
+- [x] **Step 3: Implement routers and HTMX templates**
 Wire `containers` and `routes` routers into `app/main.py` and create clean Tailwind + HTMX partials.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 Run: `pytest tests/test_routers.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add app/routers/ app/templates/ app/main.py tests/test_routers.py
 git commit -m "feat: add containers and Traefik routes HTMX UI"
@@ -209,13 +209,13 @@ git commit -m "feat: add containers and Traefik routes HTMX UI"
 - Create: `docker-compose.yml`
 - Create: `.env.example`
 
-- [ ] **Step 1: Create `Dockerfile` (Python 3.11-slim, non-root or socket-compatible, uvicorn entrypoint)**
-- [ ] **Step 2: Create `docker-compose.yml` (StackPilot + Traefik v3 sharing `traefik_dynamic` volume and `/var/run/docker.sock`)**
-- [ ] **Step 3: Create `.env.example` with `STACKPILOT_USER`, `STACKPILOT_PASSWORD`, `SECRET_KEY`**
-- [ ] **Step 4: Verify full test suite**
+- [x] **Step 1: Create `Dockerfile` (Python 3.11-slim, non-root or socket-compatible, uvicorn entrypoint)**
+- [x] **Step 2: Create `docker-compose.yml` (StackPilot + Traefik v3 sharing `traefik_dynamic` volume and `/var/run/docker.sock`)**
+- [x] **Step 3: Create `.env.example` with `STACKPILOT_USER`, `STACKPILOT_PASSWORD`, `SECRET_KEY`**
+- [x] **Step 4: Verify full test suite**
 Run: `pytest -v`
 Expected: All tests PASS.
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add Dockerfile docker-compose.yml .env.example
 git commit -m "chore: add Docker and Compose deployment files"

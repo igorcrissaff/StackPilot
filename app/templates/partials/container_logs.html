@@ -1,8 +1,19 @@
 {% if error %}
-<div class="p-3 rounded bg-red-900/50 border border-red-700 text-red-200 text-sm">{{ error }}</div>
+<div id="container-logs" class="mt-4 p-3 rounded bg-red-900/50 border border-red-700 text-red-200 text-sm">
+    <div class="flex items-center justify-between mb-1">
+        <span class="font-semibold">Erro ao carregar logs</span>
+        <button onclick="document.getElementById('container-logs').outerHTML='<div id=\'container-logs\' class=\'mt-4\'></div>'"
+                class="text-xs text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700">Fechar</button>
+    </div>
+    <p>{{ error }}</p>
+</div>
 {% else %}
-<div class="mt-4">
-    <div class="text-xs text-slate-400 mb-1">Logs for {{ container_id }}</div>
-    <pre class="p-3 rounded bg-black/50 border border-slate-800 text-xs text-slate-200 overflow-x-auto max-h-64">{{ logs }}</pre>
+<div id="container-logs" class="mt-4">
+    <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+        <span>Logs de <strong class="text-white">{{ container_id }}</strong></span>
+        <button onclick="document.getElementById('container-logs').outerHTML='<div id=\'container-logs\' class=\'mt-4\'></div>'"
+                class="text-xs text-slate-300 hover:text-white px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700">Fechar</button>
+    </div>
+    <pre class="p-3 rounded bg-black/60 border border-slate-800 text-xs text-slate-200 font-mono overflow-x-auto max-h-64 whitespace-pre-wrap">{{ logs if logs else "Nenhum log registrado." }}</pre>
 </div>
 {% endif %}

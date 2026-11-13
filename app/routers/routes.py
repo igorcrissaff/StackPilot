@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import ValidationError
 
@@ -66,4 +66,21 @@ def delete_route(
         request,
         "partials/route_list.html",
         {"routes": routes, "error": None},
+    )
+
+
+@router.get("/{name}/edit", response_class=HTMLResponse)
+def edit_route_form(
+    request: Request,
+    name: str,
+    user: str = Depends(require_auth),
+    traefik_svc: TraefikService = Depends(get_traefik_service),
+):
+    route = traefik_svc.get_route(name)
+    if not route:
+        raise HTTPException(status_code=404, detail=f"Route '{name}' not found")
+    return templates.TemplateResponse(
+        request,
+        "partials/route_edit_row.html",
+        {"r": route},
     )

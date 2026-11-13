@@ -1,5 +1,6 @@
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
-from app.main import app
+from app.main import app, get_docker_service, get_traefik_service
 
 
 def test_unauthenticated_redirects_to_login():
@@ -16,19 +17,29 @@ def test_login_invalid_credentials():
 
 
 def test_login_valid_credentials_and_logout():
-    client = TestClient(app)
-    resp = client.post(
-        "/login",
-        data={"username": "admin", "password": "admin"},
-        follow_redirects=False,
-    )
-    assert resp.status_code == 303
-    assert resp.headers["location"] == "/"
+    mock_docker = MagicMock()
+    mock_docker.list_containers.return_value = []
+    mock_traefik = MagicMock()
+    mock_traefik.list_routes.return_value = []
 
-    resp_dash = client.get("/")
-    assert resp_dash.status_code == 200
-    assert "StackPilot" in resp_dash.text
+    app.dependency_overrides[get_docker_service] = lambda: mock_docker
+    app.dependency_overrides[get_traefik_service] = lambda: mock_traefik
+    try:
+        client = TestClient(app)
+        resp = client.post(
+            "/login",
+            data={"username": "admin", "password": "admin"},
+            follow_redirects=False,
+        )
+        assert resp.status_code == 303
+        assert resp.headers["location"] == "/"
 
-    resp_logout = client.post("/logout", follow_redirects=False)
-    assert resp_logout.status_code == 303
-    assert resp_logout.headers["location"] == "/login"
+        resp_dash = client.get("/")
+        assert resp_dash.status_code == 200
+        assert "StackPilot" in resp_dash.text
+
+        resp_logout = client.post("/logout", follow_redirects=False)
+        assert resp_logout.status_code == 303
+        assert resp_logout.headers["location"] == "/login"
+    finally:
+        app.dependency_overrides.clear()

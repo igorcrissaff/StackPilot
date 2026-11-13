@@ -68,6 +68,12 @@ class TraefikService:
             routes.append(RouteConfig(name=name, domain=domain, target_url=target_url, tls=tls))
         return routes
 
+    def get_route(self, name: str) -> RouteConfig | None:
+        for route in self.list_routes():
+            if route.name == name:
+                return route
+        return None
+
     def upsert_route(self, route: RouteConfig) -> None:
         data = self._load_raw()
         router_def: dict = {
