@@ -4,10 +4,10 @@ Painel de controle leve para servidores domésticos (homelab) em Python, com foc
 
 ## Objetivos
 
-- **Interface inspirada no Portainer**: layout moderno com sidebar de navegação escura, cards métricos de visão geral (containers running/stopped, stacks ativas, rotas TLS), badges de status com pulso luminoso, barra de ações rápidas e filtro de pesquisa instantâneo.
+- **Interface inspirada no Portainer**: layout moderno com sidebar de navegação escura, cards métricos de visão geral (containers running/stopped, stacks ativas, rotas HTTP), badges de status com pulso luminoso, barra de ações rápidas e filtro de pesquisa instantâneo.
 - **Gerenciar containers Docker** localmente via socket (`/var/run/docker.sock`): listar, iniciar, parar, reiniciar, remover e ver logs.
 - **Editar Docker Compose de cada container (estilo Dockge)**: visualizar e editar o arquivo `compose.yaml`/`docker-compose.yml` e variáveis `.env`, com validação de sintaxe YAML, geração automática a partir de containers existentes e ação de salvar e implantar (`docker compose up -d`).
-- **Gerenciar rotas HTTP/HTTPS do Traefik** via arquivos dinâmicos YAML (file provider), com validação automática de domínios e URLs antes de escrever.
+- **Gerenciar rotas HTTP do Traefik** como subdomínios de `BASE_DOMAIN` via arquivos dinâmicos YAML (file provider), com validação automática de subdomínios e URLs e resolução local pelo arquivo `hosts`.
 - **Tudo em Python**, sem Node.js/npm para o frontend, usando FastAPI + Jinja2 + HTMX + Tailwind (CDN).
 - **Baixo consumo de recursos**, ideal para Raspberry Pi e mini PCs.
 - **Autenticação simples** de único administrador via sessão cookie assinada.
@@ -76,6 +76,7 @@ Variáveis de ambiente (via `.env`):
 | `SECRET_KEY`          | change-me     | Chave secreta para sessões           |
 | `TRAEFIK_DYNAMIC_DIR` | /etc/traefik/dynamic | Diretorio de rotas dinâmicas |
 | `STACKS_DIR`          | /opt/stacks   | Diretório base de stacks Compose     |
+| `BASE_DOMAIN`         | `home.arpa`   | Domínio base das rotas HTTP locais (subdomínios via `hosts`) |
 
 ## Testes
 

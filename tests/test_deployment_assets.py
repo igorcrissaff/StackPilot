@@ -27,8 +27,10 @@ def test_traefik_compose_binds_dynamic_dir_and_ports():
     volumes = traefik["volumes"]
     assert any(v.endswith(":/etc/traefik/dynamic") for v in volumes)
     assert any("${TRAEFIK_DYNAMIC_DIR:" in v for v in volumes)
-    for port in ("80:80", "443:443", "127.0.0.1:8080:8080"):
-        assert port in traefik["ports"]
+    assert "80:80" in traefik["ports"]
+    assert "127.0.0.1:8080:8080" in traefik["ports"]
+    assert "443:443" not in traefik["ports"]
+    assert not any("websecure" in arg for arg in traefik["command"])
 
 
 ENV_WSL = Path(".env.wsl.example")
@@ -166,3 +168,13 @@ def test_wsl_deploy_doc_security_and_fallback():
 def test_env_examples_define_base_domain():
     for path in (Path(".env.example"), Path(".env.wsl.example")):
         assert _env_map(path)["BASE_DOMAIN"] == "home.arpa"
+
+
+def test_wsl_deploy_doc_documents_subdomain_routes():
+    text = DOC.read_text(encoding="utf-8")
+    for needle in ("BASE_DOMAIN", "home.arpa", "hosts", "127.0.0.1"):
+        assert needle in text
+
+
+def test_readme_documents_base_domain():
+    assert "BASE_DOMAIN" in Path("README.md").read_text(encoding="utf-8")

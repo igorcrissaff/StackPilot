@@ -36,7 +36,7 @@ Reabra a distro e rode o script de novo. Ele instala `docker-ce` + plugin `docke
 ```bash
 ./deploy/install-stackpilot.sh
 ```
-Cria `.venv` com Python 3.14, instala as dependências, gera `.env` a partir de `.env.wsl.example`, registra e ativa o serviço `systemd` e sobe o Traefik. Para usar o fallback de Python: `PY_VERSION=3.13 ./deploy/install-stackpilot.sh`.
+Cria `.venv` com Python 3.14, instala as dependências, gera `.env` a partir de `.env.wsl.example`, registra e ativa o serviço `systemd` e sobe o Traefik. Para usar o fallback de Python: `PY_VERSION=3.13 ./deploy/install-stackpilot.sh`. O `.env` gerado inclui `BASE_DOMAIN=home.arpa`; ajuste se quiser outro domínio local.
 
 ## 3. Acessar
 - App: `http://localhost:8000` (login de `.env`).
@@ -50,7 +50,7 @@ Por padrão o WSL2 fica atrás de NAT. Em Windows 11, crie `%USERPROFILE%\.wslco
 [wsl2]
 networkingMode=mirrored
 ```
-Rode `wsl --shutdown` e reabra. Alternativa sem mirrored networking: `netsh interface portproxy` para 8000/80/443.
+Rode `wsl --shutdown` e reabra. Alternativa sem mirrored networking: `netsh interface portproxy` para 8000/80.
 
 ## 5. Iniciar no boot/login do Windows
 Crie uma Tarefa Agendada no logon executando:
@@ -66,10 +66,17 @@ journalctl -u stackpilot -f
 ```
 
 ## 7. Traefik e rotas
-O Traefik entra na rede externa `stackpilot_net`. Rotas apontam para nomes de containers dessa rede; para um serviço no host da WSL, use `http://host.docker.internal:<porta>`. As stacks gerenciadas precisam entrar na `stackpilot_net`.
+O Traefik entra na rede externa `stackpilot_net` e publica apenas a porta 80. As rotas criadas no painel são servidas em **HTTP** no formato `subdomain.<BASE_DOMAIN>` (padrão `home.arpa`), sem TLS neste ciclo. Rotas apontam para nomes de containers dessa rede; para um serviço no host da WSL, use `http://host.docker.internal:<porta>`. As stacks gerenciadas precisam entrar na `stackpilot_net`.
+
+A resolução de nomes é local: adicione cada rota ao arquivo `hosts` da máquina que acessa o painel. Exemplo:
+```
+127.0.0.1 grafana.home.arpa
+127.0.0.1 portainer.home.arpa
+```
+Se acessar de outra máquina, use o IP do host WSL no lugar de `127.0.0.1`. O painel apenas mostra essa dica; ele não edita o arquivo `hosts`. Não habilite portas/serviços TLS até que este ciclo de TLS seja implementado.
 
 ## Manter o deploy em Docker
-O caminho antigo continua válido em outra máquina/daemon, mas não na mesma distro provisionada: os dois caminhos disputam portas (80/443/8000), o container `traefik` e a rede `stackpilot_net` — são mutuamente exclusivos no mesmo host.
+O caminho antigo continua válido em outra máquina/daemon, mas não na mesma distro provisionada: os dois caminhos disputam portas (80/8000), o container `traefik` e a rede `stackpilot_net` — são mutuamente exclusivos no mesmo host.
 
 ```bash
 cp .env.example .env
