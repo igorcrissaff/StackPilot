@@ -102,3 +102,20 @@ def test_install_script_has_required_logic():
     assert "stackpilot.service.template" in text
     assert "systemctl enable --now stackpilot.service" in text
     assert "docker-compose.traefik.yml" in text
+
+
+DOC = Path("docs/deploy-wsl.md")
+
+
+def test_wsl_deploy_doc_covers_key_steps():
+    text = DOC.read_text(encoding="utf-8")
+    for needle in (
+        "wsl --install -d Ubuntu",
+        "provision-wsl.sh",
+        "install-stackpilot.sh",
+        "systemctl status stackpilot",
+        "networkingMode=mirrored",
+        "wsl --shutdown",
+        "stackpilot_net",
+    ):
+        assert needle in text
