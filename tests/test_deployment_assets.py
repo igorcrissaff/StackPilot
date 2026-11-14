@@ -56,3 +56,24 @@ def test_env_wsl_example_has_required_keys_and_absolute_paths():
         assert key in env
     assert env["TRAEFIK_DYNAMIC_DIR"].startswith("/")
     assert env["STACKS_DIR"].startswith("/")
+
+
+UNIT = Path("deploy/stackpilot.service.template")
+
+
+def test_systemd_unit_template_directives():
+    text = UNIT.read_text(encoding="utf-8")
+    for needle in (
+        "[Unit]",
+        "[Service]",
+        "[Install]",
+        "User=__USER__",
+        "WorkingDirectory=__APP_DIR__",
+        "EnvironmentFile=__APP_DIR__/.env",
+        "ExecStart=__APP_DIR__/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000",
+        "Restart=on-failure",
+        "After=network-online.target docker.service",
+        "Wants=network-online.target docker.service",
+        "WantedBy=multi-user.target",
+    ):
+        assert needle in text
