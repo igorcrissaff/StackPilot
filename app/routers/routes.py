@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import ValidationError
 
 from app.auth import require_auth
+from app.config import get_settings
 from app.dependencies import get_traefik_service, templates
 from app.services.traefik_service import RouteConfig, TraefikService
 
@@ -19,7 +20,7 @@ def list_routes(
     return templates.TemplateResponse(
         request,
         "partials/route_list.html",
-        {"routes": routes, "error": None},
+        {"routes": routes, "error": None, "base_domain": get_settings().base_domain},
     )
 
 
@@ -27,9 +28,8 @@ def list_routes(
 def upsert_route(
     request: Request,
     name: str = Form(...),
-    domain: str = Form(...),
+    subdomain: str = Form(...),
     target_url: str = Form(...),
-    tls: str | None = Form(None),
     user: str = Depends(require_auth),
     traefik_svc: TraefikService = Depends(get_traefik_service),
 ):
@@ -37,9 +37,8 @@ def upsert_route(
     try:
         route = RouteConfig(
             name=name.strip(),
-            domain=domain.strip(),
+            subdomain=subdomain.strip(),
             target_url=target_url.strip(),
-            tls=tls is not None,
         )
         traefik_svc.upsert_route(route)
     except ValidationError as exc:
@@ -49,7 +48,7 @@ def upsert_route(
     return templates.TemplateResponse(
         request,
         "partials/route_list.html",
-        {"routes": routes, "error": error},
+        {"routes": routes, "error": error, "base_domain": get_settings().base_domain},
     )
 
 
@@ -65,7 +64,7 @@ def delete_route(
     return templates.TemplateResponse(
         request,
         "partials/route_list.html",
-        {"routes": routes, "error": None},
+        {"routes": routes, "error": None, "base_domain": get_settings().base_domain},
     )
 
 
@@ -82,5 +81,5 @@ def edit_route_form(
     return templates.TemplateResponse(
         request,
         "partials/route_edit_row.html",
-        {"r": route},
+        {"r": route, "base_domain": get_settings().base_domain},
     )

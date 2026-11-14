@@ -67,6 +67,11 @@ def dashboard(
     except Exception as exc:
         route_error = str(exc)
 
+    running_containers = sum(1 for c in containers if getattr(c, "status", "") == "running")
+    stopped_containers = len(containers) - running_containers
+    stacks_set = {getattr(c, "stack", None) for c in containers if getattr(c, "stack", None)}
+    stacks_count = len(stacks_set)
+
     return templates.TemplateResponse(
         request,
         "dashboard.html",
@@ -76,5 +81,9 @@ def dashboard(
             "container_error": container_error,
             "routes": routes,
             "route_error": route_error,
+            "running_containers": running_containers,
+            "stopped_containers": stopped_containers,
+            "base_domain": settings.base_domain,
+            "stacks_count": stacks_count,
         },
     )

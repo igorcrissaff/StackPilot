@@ -1,73 +1,389 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 py-8">
-    <header class="flex items-center justify-between mb-8">
+<div class="flex h-screen overflow-hidden bg-[#0c1017]">
+    <!-- Portainer Style Left Sidebar -->
+    <aside class="w-64 bg-[#111722] border-r border-[#232f45] shrink-0 flex flex-col justify-between hidden lg:flex select-none z-30">
         <div>
-            <h1 class="text-2xl font-bold text-white">StackPilot</h1>
-            <p class="text-sm text-slate-400">Homelab Control Panel</p>
-        </div>
-        <div class="flex items-center gap-4">
-            <span class="text-sm text-slate-400">{{ user }}</span>
-            <form method="post" action="/logout">
-                <button type="submit" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm text-slate-200">
-                    Logout
-                </button>
-            </form>
-        </div>
-    </header>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <section class="bg-slate-900 border border-slate-800 rounded-xl p-5">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold text-white">Containers</h2>
-                <button
-                    hx-get="/containers"
-                    hx-target="#container-list"
-                    hx-swap="outerHTML"
-                    class="px-3 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-sm text-white">
-                    Refresh
-                </button>
-            </div>
-            <div id="container-list">
-                {% include "partials/container_list.html" %}
-            </div>
-            <div id="container-logs" class="mt-4"></div>
-        </section>
-
-        <section class="bg-slate-900 border border-slate-800 rounded-xl p-5">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold text-white">Traefik Routes</h2>
-                <button
-                    hx-get="/routes"
-                    hx-target="#route-list"
-                    hx-swap="outerHTML"
-                    class="px-3 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-sm text-white">
-                    Refresh
-                </button>
-            </div>
-            <div id="route-list">
-                {% include "partials/route_list.html" %}
-            </div>
-
-            <h3 class="text-sm font-semibold text-slate-300 mt-6 mb-3">Add Route</h3>
-            <form hx-post="/routes" hx-target="#route-list" hx-swap="outerHTML" class="space-y-3">
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="text" name="name" placeholder="name" required
-                           class="px-3 py-2 rounded bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-sky-500">
-                    <input type="text" name="domain" placeholder="domain" required
-                           class="px-3 py-2 rounded bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-sky-500">
-                    <input type="text" name="target_url" placeholder="http://service:port" required
-                           class="px-3 py-2 rounded bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-sky-500 col-span-2">
+            <!-- Sidebar Header / Brand -->
+            <div class="h-16 flex items-center gap-3 px-5 border-b border-[#232f45] bg-[#0e141f]">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-600 to-cyan-400 p-0.5 flex items-center justify-center shadow-lg shadow-sky-500/10">
+                    <div class="w-full h-full bg-[#111722] rounded-[10px] flex items-center justify-center">
+                        <svg class="w-5 h-5 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                        </svg>
+                    </div>
                 </div>
-                <label class="flex items-center gap-2 text-sm text-slate-300">
-                    <input type="checkbox" name="tls" checked class="rounded bg-slate-800 border-slate-700">
-                    Enable TLS (Let's Encrypt)
-                </label>
-                <button type="submit" class="w-full py-2 px-4 rounded bg-emerald-600 hover:bg-emerald-500 text-sm text-white font-medium">
-                    Add Route
-                </button>
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-base tracking-tight text-white">StackPilot</span>
+                    <span class="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-sky-500/15 text-sky-400 border border-sky-500/30 rounded">CE</span>
+                </div>
+            </div>
+
+            <!-- Environment Selector (Portainer style) -->
+            <div class="p-3 border-b border-[#232f45]/70">
+                <div class="p-2.5 rounded-lg bg-[#161e2e] border border-[#232f45] flex items-center justify-between">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-lg">🐳</span>
+                        <div class="min-w-0">
+                            <span class="block text-xs font-semibold text-white truncate">local</span>
+                            <span class="block text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
+                                standalone
+                            </span>
+                        </div>
+                    </div>
+                    <span class="text-[10px] font-mono text-slate-500 bg-[#0f1521] px-1.5 py-0.5 rounded border border-[#232f45]">Docker</span>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="p-3 space-y-6">
+                <!-- Group: OVERVIEW -->
+                <div>
+                    <span class="px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">Visão Geral</span>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="#overview-section"
+                               class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium bg-sky-500/10 text-sky-400 border-l-2 border-sky-500 transition">
+                                <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                                </svg>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Group: DOCKER / STACKS -->
+                <div>
+                    <span class="px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">Docker &amp; Stacks</span>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="#containers-section"
+                               class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-[#161e2e] transition">
+                                <div class="flex items-center gap-2.5">
+                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                    </svg>
+                                    <span>Containers</span>
+                                </div>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#232f45] text-slate-300">
+                                    {{ containers|length }}
+                                </span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#containers-section"
+                               class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-[#161e2e] transition">
+                                <div class="flex items-center gap-2.5">
+                                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                                    </svg>
+                                    <span>Compose Stacks</span>
+                                </div>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                                    {{ stacks_count }}
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Group: NETWORK / PROXY -->
+                <div>
+                    <span class="px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">Rede &amp; Roteamento</span>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="#routes-section"
+                               class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-[#161e2e] transition">
+                                <div class="flex items-center gap-2.5">
+                                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                                    </svg>
+                                    <span>Traefik Routes</span>
+                                </div>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                    {{ routes|length }}
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Sidebar Footer / User Profile -->
+        <div class="p-3 border-t border-[#232f45] bg-[#0e141f]">
+            <div class="flex items-center justify-between gap-2 p-2 rounded-lg bg-[#161e2e] border border-[#232f45]">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm">
+                        {{ user[:1]|upper }}
+                    </div>
+                    <div class="min-w-0">
+                        <span class="block text-xs font-semibold text-white truncate">{{ user }}</span>
+                        <span class="block text-[10px] text-slate-400 truncate">Administrador</span>
+                    </div>
+                </div>
+                <form method="post" action="/logout">
+                    <button type="submit"
+                            title="Desconectar do painel"
+                            class="p-1.5 rounded-md hover:bg-red-500/15 text-slate-400 hover:text-red-400 border border-transparent hover:border-red-500/30 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Mobile Sidebar Drawer Overlay -->
+    <div id="mobile-drawer" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm lg:hidden hidden"
+         onclick="if(event.target===this)this.classList.add('hidden')">
+        <div class="w-64 h-full bg-[#111722] border-r border-[#232f45] flex flex-col justify-between p-4">
+            <div>
+                <div class="flex items-center justify-between pb-4 border-b border-[#232f45]">
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-white">StackPilot</span>
+                        <span class="px-1.5 py-0.5 text-[10px] font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/30 rounded">CE</span>
+                    </div>
+                    <button onclick="document.getElementById('mobile-drawer').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">✕</button>
+                </div>
+                <div class="py-4 space-y-2">
+                    <a href="#overview-section" onclick="document.getElementById('mobile-drawer').classList.add('hidden')" class="block px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-[#161e2e]">Dashboard</a>
+                    <a href="#containers-section" onclick="document.getElementById('mobile-drawer').classList.add('hidden')" class="block px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-[#161e2e]">Containers</a>
+                    <a href="#routes-section" onclick="document.getElementById('mobile-drawer').classList.add('hidden')" class="block px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-[#161e2e]">Traefik Routes</a>
+                </div>
+            </div>
+            <form method="post" action="/logout">
+                <button type="submit" class="w-full py-2 px-3 rounded-lg bg-red-600/20 text-red-300 border border-red-500/30 text-xs font-medium">Logout</button>
             </form>
-        </section>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <!-- Portainer Style Top Bar -->
+        <header class="h-16 bg-[#161e2e]/90 backdrop-blur border-b border-[#232f45] flex items-center justify-between px-6 sticky top-0 z-20">
+            <!-- Breadcrumbs & Mobile Toggle -->
+            <div class="flex items-center gap-3 text-xs">
+                <button type="button"
+                        onclick="document.getElementById('mobile-drawer').classList.toggle('hidden')"
+                        class="p-1.5 rounded-lg bg-[#0f1521] hover:bg-slate-800 border border-[#232f45] text-slate-400 hover:text-white lg:hidden transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <span class="text-slate-400 hidden sm:inline">Ambiente:</span>
+                <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/30 flex items-center gap-1">
+                    <span>🐳</span> local
+                </span>
+                <span class="text-slate-600">/</span>
+                <span class="text-white font-medium">Dashboard</span>
+            </div>
+
+            <!-- Right Controls -->
+            <div class="flex items-center gap-4">
+                <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Docker Socket Online
+                </span>
+
+                <div class="h-4 w-px bg-[#232f45] hidden sm:block"></div>
+
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-300 font-medium hidden sm:inline">{{ user }}</span>
+                    <form method="post" action="/logout">
+                        <button type="submit"
+                                class="px-3 py-1.5 rounded-lg bg-[#0f1521] hover:bg-red-500/15 text-slate-300 hover:text-red-400 border border-[#232f45] hover:border-red-500/30 text-xs font-medium transition flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                            <span>Logout</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Body Content -->
+        <main class="p-6 space-y-6 max-w-7xl w-full mx-auto">
+            <!-- Portainer Metric Summary Cards Grid -->
+            <section id="overview-section" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Metric 1: Containers -->
+                <div class="p-4 rounded-xl bg-[#161e2e] border border-[#232f45] shadow-lg flex items-center justify-between">
+                    <div>
+                        <span class="block text-xs font-medium uppercase tracking-wider text-slate-400">Containers</span>
+                        <span class="block text-2xl font-bold text-white mt-1">{{ containers|length }}</span>
+                        <div class="flex items-center gap-2 text-xs mt-1.5">
+                            <span class="text-emerald-400 font-medium">● {{ running_containers }} running</span>
+                            <span class="text-slate-500">•</span>
+                            <span class="text-slate-400">● {{ stopped_containers }} stopped</span>
+                        </div>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Metric 2: Stacks / Compose -->
+                <div class="p-4 rounded-xl bg-[#161e2e] border border-[#232f45] shadow-lg flex items-center justify-between">
+                    <div>
+                        <span class="block text-xs font-medium uppercase tracking-wider text-slate-400">Compose Stacks</span>
+                        <span class="block text-2xl font-bold text-white mt-1">{{ stacks_count }}</span>
+                        <span class="block text-xs text-slate-400 mt-1.5">Stacks Dockge / Compose</span>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Metric 3: Traefik Routes -->
+                <div class="p-4 rounded-xl bg-[#161e2e] border border-[#232f45] shadow-lg flex items-center justify-between">
+                    <div>
+                        <span class="block text-xs font-medium uppercase tracking-wider text-slate-400">Traefik Routes</span>
+                        <span class="block text-2xl font-bold text-white mt-1">{{ routes|length }}</span>
+                        <span class="block text-xs text-slate-400 mt-1.5">Roteamento HTTP local</span>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Metric 4: Endpoint Status -->
+                <div class="p-4 rounded-xl bg-[#161e2e] border border-[#232f45] shadow-lg flex items-center justify-between">
+                    <div class="min-w-0">
+                        <span class="block text-xs font-medium uppercase tracking-wider text-slate-400">Endpoint</span>
+                        <span class="block text-base font-bold text-white mt-1 truncate">/var/run/docker.sock</span>
+                        <span class="block text-xs text-emerald-400 mt-1.5 font-medium flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+                            Conectado ao Docker
+                        </span>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+                        </svg>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main Two-Column / Split Layout -->
+            <div class="space-y-6">
+                <!-- Section 1: Containers List & Compose & Logs -->
+                <section id="containers-section" class="bg-[#161e2e] border border-[#232f45] rounded-xl p-5 shadow-xl">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-[#232f45]">
+                        <div class="flex items-center gap-2.5">
+                            <div class="p-1.5 rounded-lg bg-sky-500/10 text-sky-400">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-semibold text-white">Containers</h2>
+                                <p class="text-xs text-slate-400">Gerenciamento de ciclo de vida e arquivos Docker Compose</p>
+                            </div>
+                        </div>
+                        <button
+                            hx-get="/containers"
+                            hx-target="#container-list"
+                            hx-swap="outerHTML"
+                            class="px-3 py-1.5 rounded-lg bg-[#0f1521] hover:bg-slate-800 border border-[#232f45] text-xs font-medium text-slate-200 transition flex items-center gap-1.5 shadow-sm">
+                            <svg class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            <span>Atualizar</span>
+                        </button>
+                    </div>
+
+                    <!-- Container List HTMX Target -->
+                    <div id="container-list">
+                        {% include "partials/container_list.html" %}
+                    </div>
+
+                    <!-- Container Compose & Logs Panels -->
+                    <div id="container-compose" class="mt-4"></div>
+                    <div id="container-logs" class="mt-4"></div>
+                </section>
+
+                <!-- Section 2: Traefik Routes -->
+                <section id="routes-section" class="bg-[#161e2e] border border-[#232f45] rounded-xl p-5 shadow-xl">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-[#232f45]">
+                        <div class="flex items-center gap-2.5">
+                            <div class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-semibold text-white">Traefik Routes</h2>
+                                <p class="text-xs text-slate-400">Roteamento HTTP local por subdomínios do Traefik v3</p>
+                            </div>
+                        </div>
+                        <button
+                            hx-get="/routes"
+                            hx-target="#route-list"
+                            hx-swap="outerHTML"
+                            class="px-3 py-1.5 rounded-lg bg-[#0f1521] hover:bg-slate-800 border border-[#232f45] text-xs font-medium text-slate-200 transition flex items-center gap-1.5 shadow-sm">
+                            <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            <span>Atualizar</span>
+                        </button>
+                    </div>
+
+                    <!-- Routes List HTMX Target -->
+                    <div id="route-list">
+                        {% include "partials/route_list.html" %}
+                    </div>
+
+                    <!-- Add Route Form (Portainer Style Card) -->
+                    <div class="mt-6 pt-5 border-t border-[#232f45]">
+                        <div class="mb-3">
+                            <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Criar Nova Rota Traefik</h3>
+                            <p class="text-[11px] text-slate-500">Gera e valida arquivos dinâmicos YAML automaticamente</p>
+                            <p class="text-[11px] text-slate-500">Resolução local: adicione 127.0.0.1 &lt;sub&gt;.{{ base_domain }} ao arquivo hosts (use o IP do host se navegar de outra máquina).</p>
+                        </div>
+                        <form hx-post="/routes" hx-target="#route-list" hx-swap="outerHTML" class="space-y-3">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-medium text-slate-400 mb-1">Nome da Rota</label>
+                                    <input type="text" name="name" placeholder="ex: jellyfin" required
+                                           class="w-full px-3 py-2 rounded-lg bg-[#0f1521] border border-[#232f45] text-white text-xs placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30 transition">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-medium text-slate-400 mb-1">Subdomínio</label>
+                                    <input type="text" name="subdomain" placeholder="ex: jellyfin" required
+                                           class="w-full px-3 py-2 rounded-lg bg-[#0f1521] border border-[#232f45] text-white text-xs placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30 transition">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-medium text-slate-400 mb-1">URL de Destino</label>
+                                    <input type="text" name="target_url" placeholder="http://jellyfin:8096" required
+                                           class="w-full px-3 py-2 rounded-lg bg-[#0f1521] border border-[#232f45] text-white text-xs placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30 transition">
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center justify-end gap-3 pt-1">
+                                <button type="submit"
+                                        class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium transition shadow-md shadow-emerald-600/20 flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                    <span>Adicionar Rota</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </main>
     </div>
 </div>
 {% endblock %}

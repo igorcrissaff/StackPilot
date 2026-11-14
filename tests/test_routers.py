@@ -1,7 +1,10 @@
+from pathlib import Path
 from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 
-from app.main import app, get_docker_service, get_traefik_service
+from app.dependencies import get_compose_service, get_docker_service, get_traefik_service
+from app.main import app
+from app.services.compose_service import ComposeInfo
 from app.services.docker_service import ContainerInfo
 from app.services.traefik_service import RouteConfig
 
@@ -12,24 +15,28 @@ def _authed_client():
     return client
 
 
-def test_dashboard_renders_containers_and_routes():
+def test_dashboard_renders_routes_with_base_domain():
     mock_docker = MagicMock()
     mock_docker.list_containers.return_value = [
         ContainerInfo(id="1234567890ab", short_id="1234567890ab", name="jellyfin", image="jellyfin/jellyfin:latest", status="running")
     ]
     mock_traefik = MagicMock()
     mock_traefik.list_routes.return_value = [
-        RouteConfig(name="jellyfin", domain="jellyfin.home.arpa", target_url="http://jellyfin:8096", tls=True)
+        RouteConfig(name="jellyfin", subdomain="jellyfin", target_url="http://jellyfin:8096")
     ]
 
     app.dependency_overrides[get_docker_service] = lambda: mock_docker
     app.dependency_overrides[get_traefik_service] = lambda: mock_traefik
     try:
-        client = _authed_client()
-        resp = client.get("/")
+        resp = _authed_client().get("/")
         assert resp.status_code == 200
         assert "jellyfin" in resp.text
         assert "jellyfin.home.arpa" in resp.text
+        assert "Compose Stacks" in resp.text
+        assert "Traefik Routes" in resp.text
+        assert "Docker Socket" in resp.text
+        assert 'name="subdomain"' in resp.text
+        assert 'name="tls"' not in resp.text
     finally:
         app.dependency_overrides.clear()
 
@@ -57,42 +64,183 @@ def test_create_and_delete_route():
     mock_traefik = MagicMock()
     mock_traefik.list_routes.return_value = []
     mock_traefik.delete_route.return_value = True
-
     app.dependency_overrides[get_traefik_service] = lambda: mock_traefik
     try:
         client = _authed_client()
         resp = client.post(
             "/routes",
-            data={"name": "plex", "domain": "plex.home.arpa", "target_url": "http://plex:32400", "tls": "on"},
+            data={"name": "plex-ui", "subdomain": "plex", "target_url": "http://plex:32400"},
         )
         assert resp.status_code == 200
         mock_traefik.upsert_route.assert_called_once()
+        route = mock_traefik.upsert_route.call_args.args[0]
+        assert route.name == "plex-ui"
+        assert route.subdomain == "plex"
 
-        resp_del = client.delete("/routes/plex")
+        resp_del = client.delete("/routes/plex-ui")
         assert resp_del.status_code == 200
-        mock_traefik.delete_route.assert_called_once_with("plex")
+        mock_traefik.delete_route.assert_called_once_with("plex-ui")
     finally:
         app.dependency_overrides.clear()
 
 
-def test_edit_route_form():
+def test_create_route_rejects_dotted_subdomain():
     mock_traefik = MagicMock()
-    mock_traefik.get_route.return_value = RouteConfig(
-        name="plex", domain="plex.home.arpa", target_url="http://plex:32400", tls=True
-    )
-
+    mock_traefik.list_routes.return_value = []
     app.dependency_overrides[get_traefik_service] = lambda: mock_traefik
     try:
-        client = _authed_client()
-        resp = client.get("/routes/plex/edit")
+        resp = _authed_client().post(
+            "/routes",
+            data={"name": "plex", "subdomain": "plex.home.arpa", "target_url": "http://plex:32400"},
+        )
         assert resp.status_code == 200
-        assert "plex.home.arpa" in resp.text
+        assert "Invalid subdomain" in resp.text
+        mock_traefik.upsert_route.assert_not_called()
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_edit_route_form_uses_subdomain():
+    mock_traefik = MagicMock()
+    mock_traefik.get_route.return_value = RouteConfig(
+        name="plex", subdomain="plex", target_url="http://plex:32400"
+    )
+    app.dependency_overrides[get_traefik_service] = lambda: mock_traefik
+    try:
+        resp = _authed_client().get("/routes/plex/edit")
+        assert resp.status_code == 200
+        assert 'name="subdomain"' in resp.text
+        assert "plex" in resp.text
         assert "http://plex:32400" in resp.text
-        assert "Salvar" in resp.text
-        assert "Cancelar" in resp.text
 
         mock_traefik.get_route.return_value = None
-        resp_404 = client.get("/routes/missing/edit")
-        assert resp_404.status_code == 404
+        assert _authed_client().get("/routes/missing/edit").status_code == 404
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_get_container_compose():
+    mock_compose = MagicMock()
+    mock_compose.get_compose_info.return_value = ComposeInfo(
+        container_id="c_123",
+        container_name="my_web",
+        stack_name="webstack",
+        service_name="web",
+        file_path=Path("/opt/stacks/webstack/compose.yaml"),
+        compose_content="services:\n  web:\n    image: nginx:alpine\n",
+        env_content="PORT=80\n",
+        is_generated=False,
+        exists_on_disk=True,
+    )
+
+    app.dependency_overrides[get_compose_service] = lambda: mock_compose
+    try:
+        client = _authed_client()
+        resp = client.get("/containers/c_123/compose")
+        assert resp.status_code == 200
+        assert "webstack" in resp.text
+        assert "image: nginx:alpine" in resp.text
+        assert "PORT=80" in resp.text
+        assert "Salvar" in resp.text
+        assert "Salvar &amp; Aplicar" in resp.text or "Salvar & Aplicar" in resp.text
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_save_container_compose():
+    mock_compose = MagicMock()
+    mock_compose.save_compose_file.return_value = Path("/opt/stacks/webstack/compose.yaml")
+    mock_compose.get_compose_info.return_value = ComposeInfo(
+        container_id="c_123",
+        container_name="my_web",
+        stack_name="webstack",
+        service_name="web",
+        file_path=Path("/opt/stacks/webstack/compose.yaml"),
+        compose_content="services:\n  web:\n    image: nginx:alpine\n",
+        env_content=None,
+        is_generated=False,
+        exists_on_disk=True,
+    )
+
+    app.dependency_overrides[get_compose_service] = lambda: mock_compose
+    try:
+        client = _authed_client()
+        resp = client.post(
+            "/containers/c_123/compose",
+            data={
+                "compose_content": "services:\n  web:\n    image: nginx:alpine\n",
+                "env_content": "",
+                "action": "save",
+            },
+        )
+        assert resp.status_code == 200
+        assert "Arquivo salvo com sucesso" in resp.text
+        mock_compose.save_compose_file.assert_called_once()
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_deploy_container_compose():
+    mock_compose = MagicMock()
+    mock_compose.deploy_compose.return_value = (True, "Container webstack-web-1 Started")
+    mock_compose.get_compose_info.return_value = ComposeInfo(
+        container_id="c_123",
+        container_name="my_web",
+        stack_name="webstack",
+        service_name="web",
+        file_path=Path("/opt/stacks/webstack/compose.yaml"),
+        compose_content="services:\n  web:\n    image: nginx:alpine\n",
+        env_content=None,
+        is_generated=False,
+        exists_on_disk=True,
+    )
+
+    app.dependency_overrides[get_compose_service] = lambda: mock_compose
+    try:
+        client = _authed_client()
+        resp = client.post(
+            "/containers/c_123/compose",
+            data={
+                "compose_content": "services:\n  web:\n    image: nginx:alpine\n",
+                "env_content": "",
+                "action": "deploy",
+            },
+        )
+        assert resp.status_code == 200
+        assert "Container webstack-web-1 Started" in resp.text
+        assert "implantada com sucesso" in resp.text
+        mock_compose.deploy_compose.assert_called_once()
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_save_container_compose_invalid_yaml_returns_error():
+    mock_compose = MagicMock()
+    mock_compose.save_compose_file.side_effect = ValueError("Erro de sintaxe no YAML (linha 2)")
+    mock_compose.get_compose_info.return_value = ComposeInfo(
+        container_id="c_123",
+        container_name="my_web",
+        stack_name="webstack",
+        service_name="web",
+        file_path=Path("/opt/stacks/webstack/compose.yaml"),
+        compose_content="bad: yaml: [",
+        env_content=None,
+        is_generated=False,
+        exists_on_disk=True,
+    )
+
+    app.dependency_overrides[get_compose_service] = lambda: mock_compose
+    try:
+        client = _authed_client()
+        resp = client.post(
+            "/containers/c_123/compose",
+            data={
+                "compose_content": "bad: yaml: [",
+                "env_content": "",
+                "action": "save",
+            },
+        )
+        assert resp.status_code == 200
+        assert "Erro de sintaxe no YAML" in resp.text
     finally:
         app.dependency_overrides.clear()
