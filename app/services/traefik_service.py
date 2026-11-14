@@ -3,15 +3,14 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel, field_validator
 
-DOMAIN_RE = re.compile(r"^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+SUBDOMAIN_RE = re.compile(r"^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$")
 NAME_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 
 class RouteConfig(BaseModel):
     name: str
-    domain: str
+    subdomain: str
     target_url: str
-    tls: bool = True
 
     @field_validator("name")
     @classmethod
@@ -20,11 +19,12 @@ class RouteConfig(BaseModel):
             raise ValueError("Route name must be alphanumeric with dashes/underscores")
         return v
 
-    @field_validator("domain")
+    @field_validator("subdomain")
     @classmethod
-    def validate_domain(cls, v: str) -> str:
-        if not DOMAIN_RE.match(v):
-            raise ValueError("Invalid domain name")
+    def validate_subdomain(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not SUBDOMAIN_RE.match(v):
+            raise ValueError("Invalid subdomain")
         return v
 
     @field_validator("target_url")
@@ -36,8 +36,9 @@ class RouteConfig(BaseModel):
 
 
 class TraefikService:
-    def __init__(self, dynamic_dir: Path):
+    def __init__(self, dynamic_dir: Path, base_domain: str):
         self.dynamic_dir = dynamic_dir
+        self.base_domain = base_domain.strip().lower().rstrip(".")
         self.config_file = self.dynamic_dir / "stackpilot-routes.yml"
 
     def _load_raw(self) -> dict:
@@ -57,15 +58,20 @@ class TraefikService:
         data = self._load_raw()
         routers = data["http"]["routers"]
         services = data["http"]["services"]
+        suffix = f".{self.base_domain}"
         routes = []
         for name, router in routers.items():
             rule = router.get("rule", "")
             domain = rule.removeprefix("Host(`").removesuffix("`)")
+            if not domain.endswith(suffix):
+                continue
+            subdomain = domain[: -len(suffix)]
+            if not SUBDOMAIN_RE.match(subdomain):
+                continue
             svc_name = router.get("service", name)
             servers = services.get(svc_name, {}).get("loadBalancer", {}).get("servers", [])
             target_url = servers[0]["url"] if servers else ""
-            tls = "tls" in router
-            routes.append(RouteConfig(name=name, domain=domain, target_url=target_url, tls=tls))
+            routes.append(RouteConfig(name=name, subdomain=subdomain, target_url=target_url))
         return routes
 
     def get_route(self, name: str) -> RouteConfig | None:
@@ -77,12 +83,10 @@ class TraefikService:
     def upsert_route(self, route: RouteConfig) -> None:
         data = self._load_raw()
         router_def: dict = {
-            "rule": f"Host(`{route.domain}`)",
+            "rule": f"Host(`{route.subdomain}.{self.base_domain}`)",
             "service": route.name,
-            "entryPoints": ["websecure"] if route.tls else ["web"],
+            "entryPoints": ["web"],
         }
-        if route.tls:
-            router_def["tls"] = {"certResolver": "letsencrypt"}
 
         data["http"]["routers"][route.name] = router_def
         data["http"]["services"][route.name] = {
