@@ -77,3 +77,16 @@ def test_systemd_unit_template_directives():
         "WantedBy=multi-user.target",
     ):
         assert needle in text
+
+
+def test_provision_script_has_required_logic():
+    text = Path("deploy/provision-wsl.sh").read_text(encoding="utf-8")
+    assert text.startswith("#!/usr/bin/env bash")
+    assert "set -euo pipefail" in text
+    assert "systemd=true" in text
+    assert "wsl --shutdown" in text
+    assert "docker-ce" in text
+    assert "docker-compose-plugin" in text
+    assert "usermod -aG docker" in text
+    assert "stackpilot_net" in text
+    assert "uv python install" in text
