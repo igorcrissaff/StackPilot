@@ -90,3 +90,15 @@ def test_provision_script_has_required_logic():
     assert "usermod -aG docker" in text
     assert "stackpilot_net" in text
     assert "uv python install" in text
+
+
+def test_install_script_has_required_logic():
+    text = Path("deploy/install-stackpilot.sh").read_text(encoding="utf-8")
+    assert text.startswith("#!/usr/bin/env bash")
+    assert "set -euo pipefail" in text
+    assert "uv venv" in text
+    assert "uv pip install" in text
+    assert ".env.wsl.example" in text
+    assert "stackpilot.service.template" in text
+    assert "systemctl enable --now stackpilot.service" in text
+    assert "docker-compose.traefik.yml" in text
