@@ -161,3 +161,8 @@ def test_wsl_deploy_doc_security_and_fallback():
         "mutuamente exclusiv",
     ):
         assert needle in text
+
+
+def test_env_examples_define_base_domain():
+    for path in (Path(".env.example"), Path(".env.wsl.example")):
+        assert _env_map(path)["BASE_DOMAIN"] == "home.arpa"
