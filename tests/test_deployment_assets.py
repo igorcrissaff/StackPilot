@@ -27,7 +27,7 @@ def test_traefik_compose_binds_dynamic_dir_and_ports():
     volumes = traefik["volumes"]
     assert any(v.endswith(":/etc/traefik/dynamic") for v in volumes)
     assert any("${TRAEFIK_DYNAMIC_DIR:" in v for v in volumes)
-    for port in ("80:80", "443:443", "8080:8080"):
+    for port in ("80:80", "443:443", "127.0.0.1:8080:8080"):
         assert port in traefik["ports"]
 
 
@@ -117,5 +117,47 @@ def test_wsl_deploy_doc_covers_key_steps():
         "networkingMode=mirrored",
         "wsl --shutdown",
         "stackpilot_net",
+    ):
+        assert needle in text
+
+
+def test_systemd_unit_renders_without_placeholders():
+    rendered = (
+        UNIT.read_text(encoding="utf-8")
+        .replace("__USER__", "deploy")
+        .replace("__APP_DIR__", "/opt/stackpilot")
+    )
+    assert "__" not in rendered
+    assert "ExecStart=/opt/stackpilot/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000" in rendered
+    assert "EnvironmentFile=/opt/stackpilot/.env" in rendered
+
+
+def test_env_wsl_paths_match_compose_default():
+    env = _env_map(ENV_WSL)
+    compose_text = COMPOSE.read_text(encoding="utf-8")
+    assert env["TRAEFIK_DYNAMIC_DIR"] == "/opt/stackpilot/data/traefik/dynamic"
+    assert env["TRAEFIK_DYNAMIC_DIR"] in compose_text
+    assert env["STACKS_DIR"] == "/opt/stackpilot/data/stacks"
+
+
+def test_install_script_validates_existing_env():
+    text = Path("deploy/install-stackpilot.sh").read_text(encoding="utf-8")
+    assert ".env.bak" in text
+    assert 'mkdir -p "$TRAEFIK_DYNAMIC_DIR_VALUE" "$STACKS_DIR_VALUE"' in text
+
+
+def test_install_script_warns_on_default_secrets():
+    text = Path("deploy/install-stackpilot.sh").read_text(encoding="utf-8")
+    assert "credenciais" in text
+    assert "SECRET_KEY" in text
+
+
+def test_wsl_deploy_doc_security_and_fallback():
+    text = DOC.read_text(encoding="utf-8")
+    for needle in (
+        "PY_VERSION=3.13 ./deploy/install-stackpilot.sh",
+        "SECRET_KEY",
+        "systemctl restart stackpilot",
+        "mutuamente exclusiv",
     ):
         assert needle in text

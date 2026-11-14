@@ -36,11 +36,13 @@ Reabra a distro e rode o script de novo. Ele instala `docker-ce` + plugin `docke
 ```bash
 ./deploy/install-stackpilot.sh
 ```
-Cria `.venv` com Python 3.14, instala as dependências, gera `.env` a partir de `.env.wsl.example`, registra e ativa o serviço `systemd` e sobe o Traefik.
+Cria `.venv` com Python 3.14, instala as dependências, gera `.env` a partir de `.env.wsl.example`, registra e ativa o serviço `systemd` e sobe o Traefik. Para usar o fallback de Python: `PY_VERSION=3.13 ./deploy/install-stackpilot.sh`.
 
 ## 3. Acessar
 - App: `http://localhost:8000` (login de `.env`).
-- Traefik dashboard: `http://localhost:8080`.
+- Traefik dashboard: `http://localhost:8080` (somente localhost).
+
+> Antes de expor na LAN, edite `.env` (defina `STACKPILOT_PASSWORD` e um `SECRET_KEY` forte) e rode `systemctl restart stackpilot`. O instalador avisa se os padrões continuarem.
 
 ## 4. Rede para a LAN
 Por padrão o WSL2 fica atrás de NAT. Em Windows 11, crie `%USERPROFILE%\.wslconfig`:
@@ -67,7 +69,8 @@ journalctl -u stackpilot -f
 O Traefik entra na rede externa `stackpilot_net`. Rotas apontam para nomes de containers dessa rede; para um serviço no host da WSL, use `http://host.docker.internal:<porta>`. As stacks gerenciadas precisam entrar na `stackpilot_net`.
 
 ## Manter o deploy em Docker
-O caminho antigo continua válido:
+O caminho antigo continua válido em outra máquina/daemon, mas não na mesma distro provisionada: os dois caminhos disputam portas (80/443/8000), o container `traefik` e a rede `stackpilot_net` — são mutuamente exclusivos no mesmo host.
+
 ```bash
 cp .env.example .env
 docker compose up -d

@@ -13,7 +13,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     volumes:
       - ${TRAEFIK_DYNAMIC_DIR:-/opt/stackpilot/data/traefik/dynamic}:/etc/traefik/dynamic
     extra_hosts:
