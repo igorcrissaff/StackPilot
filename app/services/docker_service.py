@@ -17,6 +17,9 @@ class ContainerInfo(BaseModel):
     name: str
     image: str
     status: str
+    stack: str | None = None
+    service: str | None = None
+    compose_file: str | None = None
 
 
 class DockerService:
@@ -41,6 +44,8 @@ class DockerService:
         result = []
         for c in containers:
             image_tag = c.image.tags[0] if c.image.tags else str(c.image.short_id)
+            raw_labels = getattr(c, "labels", None)
+            labels = raw_labels if isinstance(raw_labels, dict) else {}
             result.append(
                 ContainerInfo(
                     id=c.id,
@@ -48,17 +53,23 @@ class DockerService:
                     name=c.name,
                     image=image_tag,
                     status=c.status,
+                    stack=labels.get("com.docker.compose.project"),
+                    service=labels.get("com.docker.compose.service"),
+                    compose_file=labels.get("com.docker.compose.project.config_files"),
                 )
             )
         return result
 
-    def container_action(self, container_id: str, action: str) -> None:
+    def get_container(self, container_id: str):
         try:
-            container = self._get_client().containers.get(container_id)
+            return self._get_client().containers.get(container_id)
         except NotFound as exc:
             raise ContainerNotFoundError(f"Container {container_id} not found") from exc
         except DockerException as exc:
             raise DockerUnavailableError(f"Docker daemon unavailable: {exc}") from exc
+
+    def container_action(self, container_id: str, action: str) -> None:
+        container = self.get_container(container_id)
 
         if action == "start":
             container.start()
@@ -72,11 +83,9 @@ class DockerService:
             raise ValueError(f"Unsupported action: {action}")
 
     def get_logs(self, container_id: str, tail: int = 100) -> str:
+        container = self.get_container(container_id)
         try:
-            container = self._get_client().containers.get(container_id)
             raw = container.logs(tail=tail)
             return raw.decode("utf-8", errors="replace") if isinstance(raw, bytes) else str(raw)
-        except NotFound as exc:
-            raise ContainerNotFoundError(f"Container {container_id} not found") from exc
         except DockerException as exc:
             raise DockerUnavailableError(f"Docker daemon unavailable: {exc}") from exc

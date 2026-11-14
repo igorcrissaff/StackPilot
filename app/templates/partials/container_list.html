@@ -1,48 +1,160 @@
 {% if error %}
-<div class="p-3 rounded bg-red-900/50 border border-red-700 text-red-200 text-sm">{{ error }}</div>
+<div class="p-3.5 rounded-lg bg-red-950/60 border border-red-700/60 text-red-200 text-xs flex items-center gap-2.5">
+    <svg class="w-4 h-4 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span>{{ error }}</span>
+</div>
 {% elif containers|length == 0 %}
-<div class="text-sm text-slate-500 py-8 text-center">No containers found or Docker unavailable.</div>
+<div class="py-12 text-center">
+    <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-800/80 flex items-center justify-center text-slate-500">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+        </svg>
+    </div>
+    <p class="text-sm font-medium text-slate-400">Nenhum container encontrado</p>
+    <p class="text-xs text-slate-500 mt-1">Verifique se o daemon do Docker está em execução.</p>
+</div>
 {% else %}
-<table class="w-full text-sm text-left">
-    <thead>
-        <tr class="text-slate-400 border-b border-slate-800">
-            <th class="pb-2 font-medium">Name</th>
-            <th class="pb-2 font-medium">Image</th>
-            <th class="pb-2 font-medium">Status</th>
-            <th class="pb-2 font-medium text-right">Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for c in containers %}
-        <tr class="border-b border-slate-800/50">
-            <td class="py-2 text-white">{{ c.name }}</td>
-            <td class="py-2 text-slate-400">{{ c.image }}</td>
-            <td class="py-2">
-                <span class="px-2 py-0.5 rounded text-xs font-medium
-                    {% if c.status == 'running' %}bg-emerald-900/50 text-emerald-300
-                    {% elif c.status == 'exited' %}bg-slate-800 text-slate-400
-                    {% else %}bg-amber-900/50 text-amber-300{% endif %}">
-                    {{ c.status }}
-                </span>
-            </td>
-            <td class="py-2 text-right whitespace-nowrap">
-                {% if c.status == 'running' %}
-                <button hx-post="/containers/{{ c.id }}/stop" hx-target="#container-list" hx-swap="outerHTML"
-                        class="px-2 py-1 rounded bg-amber-700 hover:bg-amber-600 text-white text-xs">Stop</button>
-                <button hx-post="/containers/{{ c.id }}/restart" hx-target="#container-list" hx-swap="outerHTML"
-                        class="px-2 py-1 rounded bg-sky-700 hover:bg-sky-600 text-white text-xs">Restart</button>
-                {% else %}
-                <button hx-post="/containers/{{ c.id }}/start" hx-target="#container-list" hx-swap="outerHTML"
-                        class="px-2 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-xs">Start</button>
-                {% endif %}
-                <button hx-get="/containers/{{ c.id }}/logs" hx-target="#container-logs" hx-swap="outerHTML"
-                        class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white text-xs">Logs</button>
-                <button hx-post="/containers/{{ c.id }}/remove" hx-target="#container-list" hx-swap="outerHTML"
-                        hx-confirm="Remove container {{ c.name }}?"
-                        class="px-2 py-1 rounded bg-red-700 hover:bg-red-600 text-white text-xs">Remove</button>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<!-- Filter / Quick Search Bar -->
+<div class="mb-3 flex items-center justify-between gap-3">
+    <div class="relative flex-1 max-w-xs">
+        <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-500">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+        </div>
+        <input type="text"
+               placeholder="Filtrar containers..."
+               oninput="const q=this.value.toLowerCase(); document.querySelectorAll('#container-table-body tr').forEach(r => { const txt=r.innerText.toLowerCase(); r.style.display=txt.includes(q)?'':'none'; });"
+               class="w-full pl-8 pr-3 py-1.5 rounded-md bg-[#0f1521] border border-[#232f45] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30 transition">
+    </div>
+    <span class="text-xs text-slate-400 font-mono">
+        Total: <strong class="text-white">{{ containers|length }}</strong>
+    </span>
+</div>
+
+<!-- Portainer Style Containers Table -->
+<div class="overflow-x-auto rounded-lg border border-[#232f45] bg-[#111722]">
+    <table class="w-full text-left text-xs">
+        <thead>
+            <tr class="bg-[#0f1521] border-b border-[#232f45] text-slate-400 uppercase tracking-wider text-[11px] font-semibold">
+                <th class="py-2.5 px-3">Nome / Container</th>
+                <th class="py-2.5 px-3">Estado</th>
+                <th class="py-2.5 px-3">Imagem</th>
+                <th class="py-2.5 px-3">Stack</th>
+                <th class="py-2.5 px-3 text-right">Ações</th>
+            </tr>
+        </thead>
+        <tbody id="container-table-body" class="divide-y divide-[#232f45]/60">
+            {% for c in containers %}
+            <tr class="hover:bg-[#161e2e]/70 transition-colors group">
+                <td class="py-2.5 px-3 text-white font-medium">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full {% if c.status == 'running' %}bg-emerald-400 animate-pulse{% else %}bg-slate-600{% endif %}"></span>
+                        <div>
+                            <span class="text-white font-semibold">{{ c.name }}</span>
+                            <span class="block text-[10px] font-mono text-slate-500">{{ c.short_id }}</span>
+                        </div>
+                    </div>
+                </td>
+                <td class="py-2.5 px-3 whitespace-nowrap">
+                    {% if c.status == 'running' %}
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        running
+                    </span>
+                    {% elif c.status == 'exited' %}
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-800 text-slate-400 border border-slate-700">
+                        <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                        stopped
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                        {{ c.status }}
+                    </span>
+                    {% endif %}
+                </td>
+                <td class="py-2.5 px-3 font-mono text-slate-300 max-w-xs truncate" title="{{ c.image }}">
+                    {{ c.image }}
+                </td>
+                <td class="py-2.5 px-3 whitespace-nowrap">
+                    {% if c.stack %}
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-indigo-950/80 text-indigo-300 border border-indigo-700/50" title="Stack Compose: {{ c.stack }}">
+                        <svg class="w-3 h-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                        </svg>
+                        {{ c.stack }}
+                    </span>
+                    {% else %}
+                    <span class="text-slate-600 text-[11px]">—</span>
+                    {% endif %}
+                </td>
+                <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                    <div class="inline-flex items-center gap-1">
+                        {% if c.status == 'running' %}
+                        <button hx-post="/containers/{{ c.id }}/stop" hx-target="#container-list" hx-swap="outerHTML"
+                                title="Parar container"
+                                class="px-2 py-1 rounded bg-amber-700/80 hover:bg-amber-600 text-white text-xs font-medium transition inline-flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
+                            </svg>
+                            Stop
+                        </button>
+                        <button hx-post="/containers/{{ c.id }}/restart" hx-target="#container-list" hx-swap="outerHTML"
+                                title="Reiniciar container"
+                                class="px-2 py-1 rounded bg-sky-700/80 hover:bg-sky-600 text-white text-xs font-medium transition inline-flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            Restart
+                        </button>
+                        {% else %}
+                        <button hx-post="/containers/{{ c.id }}/start" hx-target="#container-list" hx-swap="outerHTML"
+                                title="Iniciar container"
+                                class="px-2 py-1 rounded bg-emerald-700/80 hover:bg-emerald-600 text-white text-xs font-medium transition inline-flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Start
+                        </button>
+                        {% endif %}
+
+                        <button hx-get="/containers/{{ c.id }}/compose" hx-target="#container-compose" hx-swap="outerHTML"
+                                title="Editar Docker Compose (Dockge style)"
+                                class="px-2 py-1 rounded bg-indigo-700/80 hover:bg-indigo-600 text-white text-xs font-medium transition inline-flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            Compose
+                        </button>
+
+                        <button hx-get="/containers/{{ c.id }}/logs" hx-target="#container-logs" hx-swap="outerHTML"
+                                title="Visualizar logs"
+                                class="px-2 py-1 rounded bg-slate-700/80 hover:bg-slate-600 text-white text-xs font-medium transition inline-flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Logs
+                        </button>
+
+                        <button hx-post="/containers/{{ c.id }}/remove" hx-target="#container-list" hx-swap="outerHTML"
+                                hx-confirm="Tem certeza de que deseja remover o container {{ c.name }}?"
+                                title="Remover container"
+                                class="px-2 py-1 rounded bg-red-700/80 hover:bg-red-600 text-white text-xs font-medium transition inline-flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            Remove
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endif %}
