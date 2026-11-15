@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from fastapi import Depends
 from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
@@ -7,13 +8,14 @@ from app.services.compose_service import ComposeService
 from app.services.docker_service import DockerService
 from app.services.dockerhub_service import DockerHubService
 from app.services.hub_cache import HubCache
+from app.services.settings_service import SettingsService
 from app.services.traefik_service import TraefikService
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 
-def _resolve_hub_db_path(configured: Path) -> Path:
+def _resolve_db_path(configured: Path) -> Path:
     parent = configured.parent
     if parent.is_dir() and os.access(parent, os.W_OK):
         return configured
@@ -23,7 +25,21 @@ def _resolve_hub_db_path(configured: Path) -> Path:
 
 
 def get_hub_cache() -> HubCache:
-    return HubCache(_resolve_hub_db_path(get_settings().hub_db_path))
+    return HubCache(_resolve_db_path(get_settings().hub_db_path))
+
+
+def get_settings_service() -> SettingsService:
+    return SettingsService(_resolve_db_path(get_settings().hub_db_path))
+
+
+def get_effective_base_domain(
+    settings_svc: SettingsService = Depends(get_settings_service),
+) -> str:
+    default = get_settings().base_domain
+    try:
+        return settings_svc.get_base_domain(default)
+    except Exception:
+        return default
 
 
 def get_dockerhub_service() -> DockerHubService:
@@ -40,11 +56,13 @@ def get_docker_service() -> DockerService:
     return DockerService()
 
 
-def get_traefik_service() -> TraefikService:
+def get_traefik_service(
+    base_domain: str = Depends(get_effective_base_domain),
+) -> TraefikService:
     settings = get_settings()
     return TraefikService(
         dynamic_dir=settings.traefik_dynamic_dir,
-        base_domain=settings.base_domain,
+        base_domain=base_domain,
     )
 
 
