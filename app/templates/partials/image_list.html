@@ -1,0 +1,78 @@
+{% if images_error %}
+<div class="p-3.5 mb-4 rounded-lg bg-red-950/60 border border-red-700/60 text-red-200 text-xs flex items-center gap-2.5">
+    <svg class="w-4 h-4 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span>{{ images_error }}</span>
+</div>
+{% endif %}
+
+<div class="mb-4 rounded-lg border border-[#232f45] bg-[#111722]">
+    <div class="px-3.5 py-2.5 border-b border-[#232f45] flex items-center justify-between">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Imagens já utilizadas</h2>
+        <span class="text-xs font-mono text-slate-500">{{ used_images|length }}</span>
+    </div>
+    {% if used_images %}
+    <ul class="divide-y divide-[#232f45]/60">
+        {% for used in used_images %}
+        <li class="px-3.5 py-2 flex items-center justify-between gap-3 text-xs">
+            <span class="font-mono text-slate-200 truncate" title="{{ used.image }}">{{ used.image }}</span>
+            <span class="text-[11px] text-slate-500 shrink-0">
+                {% if used.stack_name %}stack <strong class="text-indigo-300">{{ used.stack_name }}</strong> · {% endif %}
+                {{ used.use_count }}x
+            </span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="px-3.5 py-3 text-xs text-slate-500">Nenhuma imagem usada em stacks até agora.</p>
+    {% endif %}
+</div>
+
+<div class="rounded-lg border border-[#232f45] bg-[#111722]">
+    <div class="px-3.5 py-2.5 border-b border-[#232f45] flex items-center justify-between">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Imagens locais</h2>
+        <span class="text-xs font-mono text-slate-500">{{ images|length }}</span>
+    </div>
+    {% if images %}
+    <table class="w-full text-left text-xs">
+        <thead>
+            <tr class="bg-[#0f1521] border-b border-[#232f45] text-slate-400 uppercase tracking-wider text-[11px] font-semibold">
+                <th class="py-2.5 px-3">Repositório / Tag</th>
+                <th class="py-2.5 px-3">ID</th>
+                <th class="py-2.5 px-3 text-right">Tamanho</th>
+                <th class="py-2.5 px-3">Criada</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-[#232f45]/60">
+            {% for img in images %}
+                {% if img.tags %}
+                    {% for tag in img.tags %}
+                    <tr class="hover:bg-[#161e2e]/70 transition-colors">
+                        <td class="py-2.5 px-3 font-mono text-slate-200">{{ tag }}</td>
+                        <td class="py-2.5 px-3 font-mono text-slate-500">{{ img.short_id }}</td>
+                        <td class="py-2.5 px-3 text-right text-slate-400">{{ img.size }} MB</td>
+                        <td class="py-2.5 px-3 text-slate-500">{{ img.created }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                <tr class="hover:bg-[#161e2e]/70 transition-colors">
+                    <td class="py-2.5 px-3">
+                        <span class="font-mono text-slate-400">{{ img.id }}</span>
+                        <span class="ml-2 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30">&lt;none&gt;</span>
+                    </td>
+                    <td class="py-2.5 px-3 font-mono text-slate-500">{{ img.short_id }}</td>
+                    <td class="py-2.5 px-3 text-right text-slate-400">{{ img.size }} MB</td>
+                    <td class="py-2.5 px-3 text-slate-500">{{ img.created }}</td>
+                </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="py-10 text-center">
+        <p class="text-sm font-medium text-slate-400">Nenhuma imagem local encontrada</p>
+        <p class="text-xs text-slate-500 mt-1">Busque uma imagem no Docker Hub para começar.</p>
+    </div>
+    {% endif %}
+</div>

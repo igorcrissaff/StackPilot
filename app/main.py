@@ -6,7 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.auth import require_auth, verify_credentials
 from app.config import get_settings
 from app.dependencies import get_docker_service, get_traefik_service, templates
-from app.routers import containers, routes as routes_router
+from app.routers import containers, docker, routes as routes_router
 from app.services.docker_service import DockerUnavailableError
 from app.services.traefik_service import TraefikService
 
@@ -15,6 +15,7 @@ app = FastAPI(title="StackPilot")
 app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
 
 app.include_router(containers.router)
+app.include_router(docker.router)
 app.include_router(routes_router.router)
 
 
