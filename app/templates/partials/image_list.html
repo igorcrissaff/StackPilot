@@ -7,6 +7,29 @@
 </div>
 {% endif %}
 
+<form class="mb-4 flex items-center gap-2"
+      hx-get="/hub/search"
+      hx-target="#hub-results"
+      hx-swap="innerHTML"
+      hx-include="closest form">
+    <div class="relative flex-1">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+        </div>
+        <input type="text"
+               name="q"
+               placeholder="Buscar imagem no Docker Hub (ex.: jellyfin/jellyfin)"
+               class="w-full pl-9 pr-3 py-2 rounded-md bg-[#0f1521] border border-[#232f45] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30 transition">
+    </div>
+    <button type="submit"
+            class="px-3 py-2 rounded-md bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition">
+        Buscar
+    </button>
+</form>
+<div id="hub-results" class="mb-4"></div>
+
 <div class="mb-4 rounded-lg border border-[#232f45] bg-[#111722]">
     <div class="px-3.5 py-2.5 border-b border-[#232f45] flex items-center justify-between">
         <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Imagens já utilizadas</h2>

@@ -80,3 +80,66 @@ def test_docker_page_requires_auth():
         r = client.get(path, follow_redirects=False)
         assert r.status_code == 303
         assert r.headers["location"] == "/login"
+
+
+from app.dependencies import get_dockerhub_service
+from app.services.dockerhub_service import (
+    HubImage,
+    HubSearchResult,
+    HubTag,
+    HubTagsResult,
+    HubUnavailableError,
+)
+
+
+def test_hub_search_renders_results():
+    mock_hub = MagicMock()
+    mock_hub.search_images.return_value = HubSearchResult(
+        images=[HubImage(repo_name="jellyfin/jellyfin", pull_count=1000, is_official=True)]
+    )
+    app.dependency_overrides[get_dockerhub_service] = lambda: mock_hub
+    try:
+        r = _client().get("/hub/search?q=jellyfin")
+        assert r.status_code == 200
+        assert "jellyfin/jellyfin" in r.text
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_hub_search_no_results():
+    mock_hub = MagicMock()
+    mock_hub.search_images.return_value = HubSearchResult(images=[])
+    app.dependency_overrides[get_dockerhub_service] = lambda: mock_hub
+    try:
+        r = _client().get("/hub/search?q=zzzz")
+        assert r.status_code == 200
+        assert "Nenhuma imagem" in r.text
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_hub_search_error_shows_message():
+    mock_hub = MagicMock()
+    mock_hub.search_images.side_effect = HubUnavailableError("limite de requisições")
+    app.dependency_overrides[get_dockerhub_service] = lambda: mock_hub
+    try:
+        r = _client().get("/hub/search?q=jellyfin")
+        assert r.status_code == 200
+        assert "limite de requisições" in r.text
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_hub_tags_renders():
+    mock_hub = MagicMock()
+    mock_hub.list_tags.return_value = HubTagsResult(
+        repo="jellyfin/jellyfin", tags=[HubTag(name="latest")]
+    )
+    app.dependency_overrides[get_dockerhub_service] = lambda: mock_hub
+    try:
+        r = _client().get("/hub/tags?repo=jellyfin/jellyfin")
+        assert r.status_code == 200
+        assert "latest" in r.text
+    finally:
+        app.dependency_overrides.clear()
+

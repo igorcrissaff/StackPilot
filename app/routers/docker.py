@@ -2,8 +2,18 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
 from app.auth import require_auth
-from app.dependencies import get_docker_service, get_hub_cache, templates
+from app.dependencies import (
+    get_docker_service,
+    get_dockerhub_service,
+    get_hub_cache,
+    templates,
+)
 from app.services.docker_service import DockerService, DockerUnavailableError
+from app.services.dockerhub_service import (
+    DockerHubService,
+    HubUnavailableError,
+    InvalidImageReferenceError,
+)
 from app.services.hub_cache import HubCache
 
 router = APIRouter(tags=["docker"])
@@ -69,4 +79,47 @@ def docker_images(
             "used_images": used_images,
             "images_error": images_error,
         },
+    )
+
+@router.get("/hub/search", response_class=HTMLResponse)
+def hub_search(
+    request: Request,
+    q: str = "",
+    user: str = Depends(require_auth),
+    hub_svc: DockerHubService = Depends(get_dockerhub_service),
+):
+    query = q.strip()
+    results = None
+    error = None
+    if query:
+        try:
+            results = hub_svc.search_images(query)
+        except HubUnavailableError as exc:
+            error = str(exc)
+    return templates.TemplateResponse(
+        request,
+        "partials/hub_search.html",
+        {"query": query, "results": results, "error": error},
+    )
+
+
+@router.get("/hub/tags", response_class=HTMLResponse)
+def hub_tags(
+    request: Request,
+    repo: str = "",
+    user: str = Depends(require_auth),
+    hub_svc: DockerHubService = Depends(get_dockerhub_service),
+):
+    repo_name = repo.strip()
+    result = None
+    error = None
+    if repo_name:
+        try:
+            result = hub_svc.list_tags(repo_name)
+        except (HubUnavailableError, InvalidImageReferenceError) as exc:
+            error = str(exc)
+    return templates.TemplateResponse(
+        request,
+        "partials/hub_tags.html",
+        {"repo": repo_name, "result": result, "error": error},
     )
