@@ -94,6 +94,31 @@ class TraefikService:
         }
         self._save_raw(data)
 
+    def rewrite_base_domain(self, old: str, new: str) -> int:
+        old = old.strip().lower().rstrip(".")
+        new = new.strip().lower().rstrip(".")
+        if old == new:
+            return 0
+
+        data = self._load_raw()
+        routers = data["http"]["routers"]
+        old_suffix = f".{old}"
+        count = 0
+        for router in routers.values():
+            rule = router.get("rule", "")
+            domain = rule.removeprefix("Host(`").removesuffix("`)")
+            if not domain.endswith(old_suffix):
+                continue
+            subdomain = domain[: -len(old_suffix)]
+            if not SUBDOMAIN_RE.match(subdomain):
+                continue
+            router["rule"] = f"Host(`{subdomain}.{new}`)"
+            count += 1
+
+        if count > 0:
+            self._save_raw(data)
+        return count
+
     def delete_route(self, name: str) -> bool:
         data = self._load_raw()
         existed = name in data["http"]["routers"]

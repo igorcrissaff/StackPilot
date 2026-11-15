@@ -77,3 +77,47 @@ def test_get_and_delete_route(tmp_path):
 def test_invalid_target_url_rejected():
     with pytest.raises(ValidationError):
         RouteConfig(name="bad", subdomain="bad", target_url="not-a-url")
+
+
+def test_rewrite_base_domain_moves_managed_routers(tmp_path):
+    svc = TraefikService(dynamic_dir=tmp_path, base_domain="home.arpa")
+    svc.upsert_route(RouteConfig(name="app1", subdomain="app1", target_url="http://app1:80"))
+
+    assert svc.rewrite_base_domain("home.arpa", "lab.local") == 1
+
+    data = yaml.safe_load((tmp_path / "stackpilot-routes.yml").read_text(encoding="utf-8"))
+    assert data["http"]["routers"]["app1"]["rule"] == "Host(`app1.lab.local`)"
+    assert data["http"]["services"]["app1"]["loadBalancer"]["servers"][0]["url"] == "http://app1:80"
+
+
+def test_rewrite_base_domain_preserves_other_domains(tmp_path):
+    (tmp_path / "stackpilot-routes.yml").write_text(
+        yaml.safe_dump(
+            {
+                "http": {
+                    "routers": {
+                        "keep": {"rule": "Host(`keep.home.arpa`)", "service": "keep"},
+                        "other": {"rule": "Host(`other.example`)", "service": "other"},
+                    },
+                    "services": {
+                        "keep": {"loadBalancer": {"servers": [{"url": "http://keep:80"}]}},
+                        "other": {"loadBalancer": {"servers": [{"url": "http://other:80"}]}},
+                    },
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    svc = TraefikService(dynamic_dir=tmp_path, base_domain="home.arpa")
+
+    assert svc.rewrite_base_domain("home.arpa", "lab.local") == 1
+
+    data = yaml.safe_load((tmp_path / "stackpilot-routes.yml").read_text(encoding="utf-8"))
+    assert data["http"]["routers"]["keep"]["rule"] == "Host(`keep.lab.local`)"
+    assert data["http"]["routers"]["other"]["rule"] == "Host(`other.example`)"
+
+
+def test_rewrite_base_domain_same_domain_is_noop(tmp_path):
+    svc = TraefikService(dynamic_dir=tmp_path, base_domain="home.arpa")
+    svc.upsert_route(RouteConfig(name="app1", subdomain="app1", target_url="http://app1:80"))
+    assert svc.rewrite_base_domain("home.arpa", "home.arpa") == 0
