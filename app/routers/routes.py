@@ -3,8 +3,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import ValidationError
 
 from app.auth import require_auth
-from app.config import get_settings
-from app.dependencies import get_traefik_service, templates
+from app.dependencies import get_effective_base_domain, get_traefik_service, templates
 from app.services.traefik_service import RouteConfig, TraefikService
 
 router = APIRouter(prefix="/routes", tags=["routes"])
@@ -14,13 +13,14 @@ router = APIRouter(prefix="/routes", tags=["routes"])
 def list_routes(
     request: Request,
     user: str = Depends(require_auth),
+    base_domain: str = Depends(get_effective_base_domain),
     traefik_svc: TraefikService = Depends(get_traefik_service),
 ):
     routes = traefik_svc.list_routes()
     return templates.TemplateResponse(
         request,
         "partials/route_list.html",
-        {"routes": routes, "error": None, "base_domain": get_settings().base_domain},
+        {"routes": routes, "error": None, "base_domain": base_domain},
     )
 
 
@@ -31,6 +31,7 @@ def upsert_route(
     subdomain: str = Form(...),
     target_url: str = Form(...),
     user: str = Depends(require_auth),
+    base_domain: str = Depends(get_effective_base_domain),
     traefik_svc: TraefikService = Depends(get_traefik_service),
 ):
     error = None
@@ -48,7 +49,7 @@ def upsert_route(
     return templates.TemplateResponse(
         request,
         "partials/route_list.html",
-        {"routes": routes, "error": error, "base_domain": get_settings().base_domain},
+        {"routes": routes, "error": error, "base_domain": base_domain},
     )
 
 
@@ -57,6 +58,7 @@ def delete_route(
     request: Request,
     name: str,
     user: str = Depends(require_auth),
+    base_domain: str = Depends(get_effective_base_domain),
     traefik_svc: TraefikService = Depends(get_traefik_service),
 ):
     traefik_svc.delete_route(name)
@@ -64,7 +66,7 @@ def delete_route(
     return templates.TemplateResponse(
         request,
         "partials/route_list.html",
-        {"routes": routes, "error": None, "base_domain": get_settings().base_domain},
+        {"routes": routes, "error": None, "base_domain": base_domain},
     )
 
 
@@ -73,6 +75,7 @@ def edit_route_form(
     request: Request,
     name: str,
     user: str = Depends(require_auth),
+    base_domain: str = Depends(get_effective_base_domain),
     traefik_svc: TraefikService = Depends(get_traefik_service),
 ):
     route = traefik_svc.get_route(name)
@@ -81,5 +84,5 @@ def edit_route_form(
     return templates.TemplateResponse(
         request,
         "partials/route_edit_row.html",
-        {"r": route, "base_domain": get_settings().base_domain},
+        {"r": route, "base_domain": base_domain},
     )

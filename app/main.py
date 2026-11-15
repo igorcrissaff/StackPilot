@@ -8,8 +8,13 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.auth import require_auth, verify_credentials
 from app.config import get_settings
-from app.dependencies import get_docker_service, get_traefik_service, templates
-from app.routers import containers, docker, routes as routes_router
+from app.dependencies import (
+    get_docker_service,
+    get_effective_base_domain,
+    get_traefik_service,
+    templates,
+)
+from app.routers import containers, docker, routes as routes_router, settings as settings_router
 from app.services.docker_service import DockerUnavailableError
 from app.services.traefik_service import TraefikService
 
@@ -23,6 +28,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(containers.router)
 app.include_router(docker.router)
 app.include_router(routes_router.router)
+app.include_router(settings_router.router)
 
 
 @app.get("/login", response_class=HTMLResponse)
@@ -60,6 +66,7 @@ def dashboard(
     user: str = Depends(require_auth),
     docker_svc=Depends(get_docker_service),
     traefik_svc: TraefikService = Depends(get_traefik_service),
+    base_domain: str = Depends(get_effective_base_domain),
 ):
     container_error = None
     route_error = None
@@ -90,7 +97,7 @@ def dashboard(
             "route_error": route_error,
             "running_containers": running_containers,
             "stopped_containers": stopped_containers,
-            "base_domain": settings.base_domain,
+            "base_domain": base_domain,
             "stacks_count": stacks_count,
         },
     )

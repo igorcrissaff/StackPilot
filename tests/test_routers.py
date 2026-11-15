@@ -2,7 +2,12 @@ from pathlib import Path
 from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 
-from app.dependencies import get_compose_service, get_docker_service, get_traefik_service
+from app.dependencies import (
+    get_compose_service,
+    get_docker_service,
+    get_effective_base_domain,
+    get_traefik_service,
+)
 from app.main import app
 from app.services.compose_service import ComposeInfo
 from app.services.docker_service import ContainerInfo
@@ -33,15 +38,17 @@ def test_dashboard_renders_routes_with_base_domain():
 
     app.dependency_overrides[get_docker_service] = lambda: mock_docker
     app.dependency_overrides[get_traefik_service] = lambda: mock_traefik
+    app.dependency_overrides[get_effective_base_domain] = lambda: "lab.local"
     try:
         resp = _authed_client().get("/")
         assert resp.status_code == 200
         assert "jellyfin" in resp.text
-        assert "jellyfin.home.arpa" in resp.text
+        assert "jellyfin.lab.local" in resp.text
         assert "Compose Stacks" in resp.text
         assert "Traefik Routes" in resp.text
         assert "Docker Socket" in resp.text
         assert 'href="/docker"' in resp.text
+        assert 'href="/settings"' in resp.text
         assert 'href="/static/favicon.svg"' in resp.text
         assert 'name="subdomain"' in resp.text
         assert 'name="tls"' not in resp.text
