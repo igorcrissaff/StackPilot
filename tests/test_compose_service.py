@@ -2,6 +2,7 @@ import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 import pytest
+import yaml
 
 from app.services.compose_service import ComposeInfo, ComposeService
 from app.services.docker_service import DockerService
@@ -188,3 +189,65 @@ def test_deploy_compose_success(mock_subproc, tmp_path):
     assert success is True
     assert "Started" in msg
     mock_subproc.assert_called_once()
+
+
+def test_generate_starter_compose():
+    svc = ComposeService(docker_service=MagicMock(), default_network='stackpilot_net')
+    data = yaml.safe_load(svc.generate_starter_compose('jellyfin/jellyfin:latest'))
+    svc_def = data['services']['jellyfin']
+    assert svc_def['image'] == 'jellyfin/jellyfin:latest'
+    assert 'container_name' not in svc_def
+    assert svc_def['networks'] == ['stackpilot_net']
+    assert data['networks']['stackpilot_net'] == {'external': True}
+    assert svc_def['restart'] == 'unless-stopped'
+
+
+def test_derive_service_name():
+    svc = ComposeService(docker_service=MagicMock())
+    assert svc.derive_service_name('nginx:alpine') == 'nginx'
+    assert svc.derive_service_name('jellyfin/jellyfin:latest') == 'jellyfin'
+    assert svc.derive_service_name('ghcr.io/org/app:1.2') == 'app'
+    assert svc.derive_service_name('redis@sha256:deadbeef') == 'redis'
+    assert svc.derive_service_name('sha256:0123456789abcdef') == 'image-0123456789ab'
+
+
+def test_extract_images():
+    svc = ComposeService(docker_service=MagicMock())
+    content = 'services:\n  a:\n    image: nginx:latest\n  b:\n    image: redis:7\n'
+    assert svc.extract_images(content) == ['nginx:latest', 'redis:7']
+
+
+@patch('subprocess.run')
+def test_create_stack_success(mock_subproc, tmp_path):
+    mock_subproc.return_value = subprocess.CompletedProcess([], 0, 'Started', '')
+    svc = ComposeService(docker_service=MagicMock(), stacks_dir=tmp_path, compose_up_timeout=600)
+    ok, msg = svc.create_stack('myapp', 'services:\n  app:\n    image: nginx:latest\n')
+    assert ok is True
+    assert (tmp_path / 'myapp' / 'compose.yaml').is_file()
+
+
+def test_create_stack_rejects_existing(tmp_path):
+    (tmp_path / 'myapp').mkdir()
+    (tmp_path / 'myapp' / 'compose.yaml').write_text('keep', encoding='utf-8')
+    svc = ComposeService(docker_service=MagicMock(), stacks_dir=tmp_path)
+    ok, msg = svc.create_stack('myapp', 'services:\n  app:\n    image: nginx:latest\n')
+    assert ok is False
+    assert 'já existe' in msg
+    assert (tmp_path / 'myapp' / 'compose.yaml').read_text(encoding='utf-8') == 'keep'
+
+
+def test_create_stack_rejects_traversal(tmp_path):
+    svc = ComposeService(docker_service=MagicMock(), stacks_dir=tmp_path)
+    ok, msg = svc.create_stack('../evil', 'services:\n  app:\n    image: nginx:latest\n')
+    assert ok is False
+    assert not (tmp_path.parent / 'evil').exists()
+
+
+@patch('subprocess.run')
+def test_create_stack_failure_removes_partial_dir(mock_subproc, tmp_path):
+    mock_subproc.return_value = subprocess.CompletedProcess([], 1, '', 'boom')
+    svc = ComposeService(docker_service=MagicMock(), stacks_dir=tmp_path)
+    ok, msg = svc.create_stack('myapp', 'services:\n  app:\n    image: nginx:latest\n')
+    assert ok is False
+    assert not (tmp_path / 'myapp').exists()
+
