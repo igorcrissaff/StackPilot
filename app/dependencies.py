@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 from fastapi import Depends
@@ -10,6 +11,8 @@ from app.services.dockerhub_service import DockerHubService
 from app.services.hub_cache import HubCache
 from app.services.settings_service import SettingsService
 from app.services.traefik_service import TraefikService
+
+logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -32,13 +35,15 @@ def get_settings_service() -> SettingsService:
     return SettingsService(_resolve_db_path(get_settings().hub_db_path))
 
 
-def get_effective_base_domain(
-    settings_svc: SettingsService = Depends(get_settings_service),
-) -> str:
+def get_effective_base_domain() -> str:
     default = get_settings().base_domain
     try:
-        return settings_svc.get_base_domain(default)
+        return get_settings_service().get_base_domain(default)
     except Exception:
+        logger.warning(
+            "settings store unavailable; falling back to BASE_DOMAIN",
+            exc_info=True,
+        )
         return default
 
 

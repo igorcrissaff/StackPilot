@@ -1,4 +1,6 @@
+import os
 import re
+import tempfile
 from pathlib import Path
 import yaml
 from pydantic import BaseModel, field_validator
@@ -52,7 +54,20 @@ class TraefikService:
 
     def _save_raw(self, data: dict) -> None:
         self.dynamic_dir.mkdir(parents=True, exist_ok=True)
-        self.config_file.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+        payload = yaml.safe_dump(data, sort_keys=False)
+        fd, tmp_name = tempfile.mkstemp(
+            dir=self.dynamic_dir, prefix=".stackpilot-routes-", suffix=".tmp"
+        )
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(payload)
+            os.replace(tmp_name, self.config_file)
+        except Exception:
+            try:
+                os.unlink(tmp_name)
+            except OSError:
+                pass
+            raise
 
     def list_routes(self) -> list[RouteConfig]:
         data = self._load_raw()

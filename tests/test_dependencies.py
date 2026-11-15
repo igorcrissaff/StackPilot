@@ -6,9 +6,8 @@ from app.dependencies import (
 from app.services.settings_service import SettingsService
 
 
-class _BrokenService:
-    def get_base_domain(self, default):
-        raise RuntimeError("db unavailable")
+def _raise_runtime(*args, **kwargs):
+    raise RuntimeError("db unavailable")
 
 
 def test_effective_base_domain_uses_override(tmp_path, monkeypatch):
@@ -18,7 +17,8 @@ def test_effective_base_domain_uses_override(tmp_path, monkeypatch):
         "app.dependencies.get_settings",
         lambda: Settings(_env_file=None, base_domain="home.arpa"),
     )
-    assert get_effective_base_domain(svc) == "lab.local"
+    monkeypatch.setattr("app.dependencies.get_settings_service", lambda: svc)
+    assert get_effective_base_domain() == "lab.local"
 
 
 def test_effective_base_domain_falls_back_to_env(tmp_path, monkeypatch):
@@ -27,15 +27,19 @@ def test_effective_base_domain_falls_back_to_env(tmp_path, monkeypatch):
         "app.dependencies.get_settings",
         lambda: Settings(_env_file=None, base_domain="home.arpa"),
     )
-    assert get_effective_base_domain(svc) == "home.arpa"
+    monkeypatch.setattr("app.dependencies.get_settings_service", lambda: svc)
+    assert get_effective_base_domain() == "home.arpa"
 
 
-def test_effective_base_domain_falls_back_when_db_fails(monkeypatch):
+def test_effective_base_domain_falls_back_when_service_fails(monkeypatch):
     monkeypatch.setattr(
         "app.dependencies.get_settings",
         lambda: Settings(_env_file=None, base_domain="home.arpa"),
     )
-    assert get_effective_base_domain(_BrokenService()) == "home.arpa"
+    monkeypatch.setattr(
+        "app.dependencies.get_settings_service", _raise_runtime
+    )
+    assert get_effective_base_domain() == "home.arpa"
 
 
 def test_traefik_service_uses_effective_base_domain():

@@ -121,3 +121,18 @@ def test_rewrite_base_domain_same_domain_is_noop(tmp_path):
     svc = TraefikService(dynamic_dir=tmp_path, base_domain="home.arpa")
     svc.upsert_route(RouteConfig(name="app1", subdomain="app1", target_url="http://app1:80"))
     assert svc.rewrite_base_domain("home.arpa", "home.arpa") == 0
+
+
+def test_save_failure_leaves_previous_file_intact(tmp_path, monkeypatch):
+    svc = TraefikService(dynamic_dir=tmp_path, base_domain="home.arpa")
+    svc.upsert_route(RouteConfig(name="app1", subdomain="app1", target_url="http://app1:80"))
+    original = (tmp_path / "stackpilot-routes.yml").read_text(encoding="utf-8")
+
+    def _boom(src, dst):
+        raise OSError("disk full")
+
+    monkeypatch.setattr("app.services.traefik_service.os.replace", _boom)
+    with pytest.raises(OSError):
+        svc.rewrite_base_domain("home.arpa", "lab.local")
+
+    assert (tmp_path / "stackpilot-routes.yml").read_text(encoding="utf-8") == original
