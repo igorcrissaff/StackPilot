@@ -15,6 +15,12 @@ def _authed_client():
     return client
 
 
+def test_favicon_is_served():
+    resp = TestClient(app).get("/static/favicon.svg")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("image/svg+xml")
+
+
 def test_dashboard_renders_routes_with_base_domain():
     mock_docker = MagicMock()
     mock_docker.list_containers.return_value = [
@@ -36,6 +42,7 @@ def test_dashboard_renders_routes_with_base_domain():
         assert "Traefik Routes" in resp.text
         assert "Docker Socket" in resp.text
         assert 'href="/docker"' in resp.text
+        assert 'href="/static/favicon.svg"' in resp.text
         assert 'name="subdomain"' in resp.text
         assert 'name="tls"' not in resp.text
     finally:

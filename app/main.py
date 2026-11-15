@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -13,6 +16,9 @@ from app.services.traefik_service import TraefikService
 settings = get_settings()
 app = FastAPI(title="StackPilot")
 app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
+
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 app.include_router(containers.router)
 app.include_router(docker.router)
