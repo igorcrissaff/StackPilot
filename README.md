@@ -1,5 +1,7 @@
 # StackPilot
 
+[![CI](https://github.com/igorcrissaff/StackPilot/actions/workflows/ci.yml/badge.svg)](https://github.com/igorcrissaff/StackPilot/actions/workflows/ci.yml)
+
 Painel de controle leve para servidores domésticos (homelab) em Python, com foco em gerenciar containers Docker e roteamento com Traefik.
 
 ## Objetivos
@@ -32,6 +34,8 @@ app/
 │   ├── dockerhub_service.py # Cliente da API do Docker Hub (busca e tags)
 │   ├── hub_cache.py        # Cache SQLite de buscas/tags e imagens já usadas
 │   └── traefik_service.py  # Geração e validação de YAML dinâmico do Traefik
+├── static/
+│   └── favicon.svg
 └── templates/
     ├── base.html, login.html, dashboard.html, docker.html
     └── partials/

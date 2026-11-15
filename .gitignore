@@ -5,5 +5,10 @@ __pycache__/
 .venv/
 *.egg-info/
 .env
+.env.*
+!.env.example
+!.env.wsl.example
 .superpowers/
 data/
+stacks/*
+!stacks/.gitkeep
