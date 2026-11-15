@@ -4,6 +4,13 @@ from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def normalize_base_domain(value: str) -> str:
+    value = value.strip().lower().rstrip(".")
+    if not value or "://" in value or "/" in value or any(ch.isspace() for ch in value):
+        raise ValueError("BASE_DOMAIN must be a bare domain, e.g. home.arpa")
+    return value
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
@@ -23,10 +30,7 @@ class Settings(BaseSettings):
     @field_validator("base_domain")
     @classmethod
     def validate_base_domain(cls, v: str) -> str:
-        v = v.strip().lower().rstrip(".")
-        if not v or "://" in v or "/" in v or any(ch.isspace() for ch in v):
-            raise ValueError("BASE_DOMAIN must be a bare domain, e.g. home.arpa")
-        return v
+        return normalize_base_domain(v)
 
 
 @lru_cache

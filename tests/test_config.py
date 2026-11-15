@@ -53,3 +53,18 @@ def test_settings_hub_env_overrides(monkeypatch):
     s = Settings(_env_file=None)
     assert s.hub_cache_ttl_seconds == 60
     assert s.stackpilot_network == "mynet"
+
+
+def test_normalize_base_domain_trims_lowercases_and_strips_dot():
+    from app.config import normalize_base_domain
+
+    assert normalize_base_domain(" Lab.Local. ") == "lab.local"
+
+
+def test_normalize_base_domain_rejects_scheme_and_path():
+    from app.config import normalize_base_domain
+
+    with pytest.raises(ValueError):
+        normalize_base_domain("http://lab.local")
+    with pytest.raises(ValueError):
+        normalize_base_domain("lab.local/painel")
