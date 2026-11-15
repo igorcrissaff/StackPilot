@@ -22,7 +22,16 @@
         {% for tag in result.tags %}
         <li class="px-3.5 py-2 flex items-center justify-between gap-3 text-xs">
             <span class="font-mono text-slate-100">{{ tag.name }}</span>
-            <span class="text-[11px] text-slate-500">{{ tag.last_updated }}</span>
+            <div class="flex items-center gap-3">
+                <span class="text-[11px] text-slate-500">{{ tag.last_updated }}</span>
+                <button type="button"
+                        hx-get="/docker/compose?image={{ (repo ~ ':' ~ tag.name)|urlencode }}"
+                        hx-target="#image-detail"
+                        hx-swap="innerHTML"
+                        class="px-2 py-1 rounded bg-indigo-700/80 hover:bg-indigo-600 text-white text-[11px] font-medium transition">
+                    Criar
+                </button>
+            </div>
         </li>
         {% endfor %}
     </ul>

@@ -1,13 +1,15 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse
 
 from app.auth import require_auth
 from app.dependencies import (
+    get_compose_service,
     get_docker_service,
     get_dockerhub_service,
     get_hub_cache,
     templates,
 )
+from app.services.compose_service import ComposeService
 from app.services.docker_service import DockerService, DockerUnavailableError
 from app.services.dockerhub_service import (
     DockerHubService,
@@ -122,4 +124,70 @@ def hub_tags(
         request,
         "partials/hub_tags.html",
         {"repo": repo_name, "result": result, "error": error},
+    )
+
+
+@router.get("/docker/compose", response_class=HTMLResponse)
+def compose_editor(
+    request: Request,
+    image: str = "",
+    user: str = Depends(require_auth),
+    compose_svc: ComposeService = Depends(get_compose_service),
+):
+    image_ref = image.strip()
+    compose_content = ""
+    stack_name = ""
+    error = None
+    if image_ref:
+        compose_content = compose_svc.generate_starter_compose(image_ref)
+        stack_name = compose_svc.derive_service_name(image_ref)
+    else:
+        error = "Informe uma imagem para gerar o Compose."
+    return templates.TemplateResponse(
+        request,
+        "partials/create_compose.html",
+        {
+            "image": image_ref,
+            "stack_name": stack_name,
+            "compose_content": compose_content,
+            "env_content": None,
+            "error": error,
+            "success": None,
+            "output": None,
+        },
+    )
+
+
+@router.post("/docker/create", response_class=HTMLResponse)
+def create_stack(
+    request: Request,
+    stack_name: str = Form(...),
+    image: str = Form(""),
+    compose_content: str = Form(...),
+    env_content: str | None = Form(None),
+    user: str = Depends(require_auth),
+    compose_svc: ComposeService = Depends(get_compose_service),
+    hub_cache: HubCache = Depends(get_hub_cache),
+):
+    ok, message = compose_svc.create_stack(stack_name, compose_content, env_content)
+    if ok:
+        for used in compose_svc.extract_images(compose_content):
+            hub_cache.record_used_image(used, stack_name)
+        return templates.TemplateResponse(
+            request,
+            "partials/create_result.html",
+            {"message": message, "stack_name": stack_name},
+        )
+    return templates.TemplateResponse(
+        request,
+        "partials/create_compose.html",
+        {
+            "image": image,
+            "stack_name": stack_name,
+            "compose_content": compose_content,
+            "env_content": env_content,
+            "error": message,
+            "success": None,
+            "output": None,
+        },
     )

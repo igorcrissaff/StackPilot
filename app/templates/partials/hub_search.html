@@ -32,7 +32,16 @@
                 <p class="text-[11px] text-slate-500 mt-0.5 truncate">{{ image.short_description }}</p>
                 {% endif %}
             </div>
-            <span class="text-[11px] font-mono text-slate-500 shrink-0">{{ image.pull_count }} pulls</span>
+            <div class="flex items-center gap-3 shrink-0">
+                <span class="text-[11px] font-mono text-slate-500">{{ image.pull_count }} pulls</span>
+                <button type="button"
+                        hx-get="/hub/tags?repo={{ image.repo_name|urlencode }}"
+                        hx-target="#image-detail"
+                        hx-swap="innerHTML"
+                        class="px-2 py-1 rounded bg-slate-700/80 hover:bg-slate-600 text-white text-[11px] font-medium transition">
+                    Tags
+                </button>
+            </div>
         </li>
         {% endfor %}
     </ul>

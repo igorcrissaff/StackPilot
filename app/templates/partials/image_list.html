@@ -72,7 +72,18 @@
                 {% if img.tags %}
                     {% for tag in img.tags %}
                     <tr class="hover:bg-[#161e2e]/70 transition-colors">
-                        <td class="py-2.5 px-3 font-mono text-slate-200">{{ tag }}</td>
+                        <td class="py-2.5 px-3">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="font-mono text-slate-200">{{ tag }}</span>
+                                <button type="button"
+                                        hx-get="/docker/compose?image={{ tag|urlencode }}"
+                                        hx-target="#image-detail"
+                                        hx-swap="innerHTML"
+                                        class="px-2 py-1 rounded bg-indigo-700/80 hover:bg-indigo-600 text-white text-[11px] font-medium transition">
+                                    Criar
+                                </button>
+                            </div>
+                        </td>
                         <td class="py-2.5 px-3 font-mono text-slate-500">{{ img.short_id }}</td>
                         <td class="py-2.5 px-3 text-right text-slate-400">{{ img.size }} MB</td>
                         <td class="py-2.5 px-3 text-slate-500">{{ img.created }}</td>
@@ -81,8 +92,19 @@
                 {% else %}
                 <tr class="hover:bg-[#161e2e]/70 transition-colors">
                     <td class="py-2.5 px-3">
-                        <span class="font-mono text-slate-400">{{ img.id }}</span>
-                        <span class="ml-2 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30">&lt;none&gt;</span>
+                        <div class="flex items-center justify-between gap-2">
+                            <span>
+                                <span class="font-mono text-slate-400">{{ img.id }}</span>
+                                <span class="ml-2 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30">&lt;none&gt;</span>
+                            </span>
+                            <button type="button"
+                                    hx-get="/docker/compose?image={{ img.id|urlencode }}"
+                                    hx-target="#image-detail"
+                                    hx-swap="innerHTML"
+                                    class="px-2 py-1 rounded bg-indigo-700/80 hover:bg-indigo-600 text-white text-[11px] font-medium transition">
+                                Criar
+                            </button>
+                        </div>
                     </td>
                     <td class="py-2.5 px-3 font-mono text-slate-500">{{ img.short_id }}</td>
                     <td class="py-2.5 px-3 text-right text-slate-400">{{ img.size }} MB</td>

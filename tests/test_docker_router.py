@@ -143,3 +143,60 @@ def test_hub_tags_renders():
     finally:
         app.dependency_overrides.clear()
 
+
+from app.dependencies import get_compose_service
+
+
+def test_compose_editor_prefills():
+    mock_compose = MagicMock()
+    mock_compose.generate_starter_compose.return_value = "services:\n  jellyfin:\n    image: jellyfin/jellyfin:latest\n"
+    mock_compose.derive_service_name.return_value = "jellyfin"
+    app.dependency_overrides[get_compose_service] = lambda: mock_compose
+    try:
+        r = _client().get("/docker/compose?image=jellyfin/jellyfin:latest")
+        assert r.status_code == 200
+        assert "image: jellyfin/jellyfin:latest" in r.text
+        assert 'value="jellyfin"' in r.text
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_create_success_records_used_images():
+    mock_compose = MagicMock()
+    mock_compose.create_stack.return_value = (True, "Stack criada")
+    mock_compose.extract_images.return_value = ["jellyfin/jellyfin:latest"]
+    mock_cache = MagicMock()
+    app.dependency_overrides[get_compose_service] = lambda: mock_compose
+    app.dependency_overrides[get_hub_cache] = lambda: mock_cache
+    try:
+        r = _client().post(
+            "/docker/create",
+            data={"stack_name": "jellyfin", "image": "jellyfin/jellyfin:latest",
+                  "compose_content": "services:\n  jellyfin:\n    image: jellyfin/jellyfin:latest\n",
+                  "env_content": ""},
+        )
+        assert r.status_code == 200
+        assert "Stack criada" in r.text
+        mock_cache.record_used_image.assert_called_once_with("jellyfin/jellyfin:latest", "jellyfin")
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_create_failure_preserves_compose():
+    mock_compose = MagicMock()
+    mock_compose.create_stack.return_value = (False, "falha no deploy")
+    app.dependency_overrides[get_compose_service] = lambda: mock_compose
+    app.dependency_overrides[get_hub_cache] = lambda: MagicMock()
+    try:
+        r = _client().post(
+            "/docker/create",
+            data={"stack_name": "jellyfin", "image": "jellyfin/jellyfin:latest",
+                  "compose_content": "services:\n  jellyfin:\n    image: jellyfin/jellyfin:latest\n",
+                  "env_content": ""},
+        )
+        assert r.status_code == 200
+        assert "falha no deploy" in r.text
+        assert "image: jellyfin/jellyfin:latest" in r.text
+    finally:
+        app.dependency_overrides.clear()
+
