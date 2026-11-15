@@ -6,6 +6,7 @@ from app.services.docker_service import (
     ContainerNotFoundError,
     DockerService,
     DockerUnavailableError,
+    ImageInfo,
 )
 
 
@@ -79,3 +80,31 @@ def test_get_logs():
     logs = svc.get_logs("abc123def456", tail=50)
     assert "log line 1" in logs
     container.logs.assert_called_once_with(tail=50)
+
+
+def test_list_images():
+    client = MagicMock()
+    tagged = MagicMock()
+    tagged.id = 'sha256:abc'
+    tagged.short_id = 'abc'
+    tagged.tags = ['nginx:alpine']
+    tagged.attrs = {'Size': 123, 'Created': '2026-01-01T00:00:00Z'}
+    dangling = MagicMock()
+    dangling.id = 'sha256:def'
+    dangling.short_id = 'def'
+    dangling.tags = []
+    dangling.attrs = {'Size': 50, 'Created': '2026-01-02T00:00:00Z'}
+    client.images.list.return_value = [tagged, dangling]
+
+    images = DockerService(client=client).list_images()
+    assert images[0].tags == ['nginx:alpine']
+    assert images[0].size == 123
+    assert images[1].tags == []
+
+
+def test_list_images_unavailable():
+    client = MagicMock()
+    client.images.list.side_effect = DockerException('socket missing')
+    with pytest.raises(DockerUnavailableError):
+        DockerService(client=client).list_images()
+
