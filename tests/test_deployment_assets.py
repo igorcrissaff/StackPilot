@@ -178,3 +178,22 @@ def test_wsl_deploy_doc_documents_subdomain_routes():
 
 def test_readme_documents_base_domain():
     assert "BASE_DOMAIN" in Path("README.md").read_text(encoding="utf-8")
+
+
+def test_env_examples_define_docker_hub_defaults():
+    for path in (Path(".env.example"), Path(".env.wsl.example")):
+        env = _env_map(path)
+        assert env["HUB_CACHE_TTL_SECONDS"] == "86400"
+        assert env["COMPOSE_UP_TIMEOUT_SECONDS"] == "600"
+        assert env["STACKPILOT_NETWORK"] == "stackpilot_net"
+        assert "HUB_DB_PATH" in env
+
+
+def test_root_compose_mounts_data_volume():
+    data = yaml.safe_load(Path("docker-compose.yml").read_text(encoding="utf-8"))
+    volumes = data["services"]["stackpilot"]["volumes"]
+    assert "./data:/opt/stackpilot" in volumes
+
+
+def test_readme_documents_docker_hub():
+    assert "Docker Hub" in Path("README.md").read_text(encoding="utf-8")

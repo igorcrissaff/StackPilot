@@ -1,0 +1,50 @@
+{% if error %}
+<div class="p-3.5 rounded-lg bg-red-950/60 border border-red-700/60 text-red-200 text-xs flex items-center gap-2.5">
+    <svg class="w-4 h-4 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span>{{ error }}</span>
+</div>
+{% elif results is not none %}
+<div class="rounded-lg border border-[#232f45] bg-[#111722]">
+    <div class="px-3.5 py-2.5 border-b border-[#232f45] flex items-center justify-between gap-2">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Docker Hub · {{ query }}</h2>
+        {% if results.stale %}
+        <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-amber-500/10 text-amber-400 border border-amber-500/30">
+            cache — pode estar desatualizado
+        </span>
+        {% endif %}
+    </div>
+    {% if results.images|length == 0 %}
+    <p class="px-3.5 py-4 text-xs text-slate-500">Nenhuma imagem encontrada para "{{ query }}".</p>
+    {% else %}
+    <ul class="divide-y divide-[#232f45]/60">
+        {% for image in results.images %}
+        <li class="px-3.5 py-2.5 flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="font-mono text-xs text-slate-100 truncate">{{ image.repo_name }}</span>
+                    {% if image.is_official %}
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-sky-500/10 text-sky-400 border border-sky-500/30">Official</span>
+                    {% endif %}
+                </div>
+                {% if image.short_description %}
+                <p class="text-[11px] text-slate-500 mt-0.5 truncate">{{ image.short_description }}</p>
+                {% endif %}
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+                <span class="text-[11px] font-mono text-slate-500">{{ image.pull_count }} pulls</span>
+                <button type="button"
+                        hx-get="/hub/tags?repo={{ image.repo_name|urlencode }}"
+                        hx-target="#image-detail"
+                        hx-swap="innerHTML"
+                        class="px-2 py-1 rounded bg-slate-700/80 hover:bg-slate-600 text-white text-[11px] font-medium transition">
+                    Tags
+                </button>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+{% endif %}

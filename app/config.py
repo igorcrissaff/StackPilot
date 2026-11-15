@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production"
     stacks_dir: Path = Path("/opt/stacks")
     base_domain: str = "home.arpa"
+    hub_db_path: Path = Path("/opt/stackpilot/stackpilot.db")
+    hub_cache_ttl_seconds: int = 86400
+    hub_api_base: str = "https://hub.docker.com"
+    hub_request_timeout_seconds: float = 10.0
+    compose_up_timeout_seconds: int = 600
+    stackpilot_network: str = "stackpilot_net"
 
     @field_validator("base_domain")
     @classmethod

@@ -22,6 +22,14 @@ class ContainerInfo(BaseModel):
     compose_file: str | None = None
 
 
+class ImageInfo(BaseModel):
+    id: str
+    short_id: str
+    tags: list[str]
+    size: int
+    created: str
+
+
 class DockerService:
     def __init__(self, client: docker.DockerClient | None = None):
         self._client = client
@@ -59,6 +67,23 @@ class DockerService:
                 )
             )
         return result
+
+    def list_images(self) -> list[ImageInfo]:
+        try:
+            images = self._get_client().images.list()
+        except DockerException as exc:
+            raise DockerUnavailableError(f"Docker daemon unavailable: {exc}") from exc
+
+        return [
+            ImageInfo(
+                id=img.id,
+                short_id=img.short_id,
+                tags=list(img.tags or []),
+                size=int(img.attrs.get("Size", 0)),
+                created=img.attrs.get("Created", ""),
+            )
+            for img in images
+        ]
 
     def get_container(self, container_id: str):
         try:

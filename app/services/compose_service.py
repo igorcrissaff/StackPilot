@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import re
+import shutil
 import subprocess
 from typing import Any
 import yaml
 from pydantic import BaseModel
 
 from app.services.docker_service import DockerService
+
+
+STACK_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
 
 class ComposeInfo(BaseModel):
@@ -28,9 +33,13 @@ class ComposeService:
         self,
         docker_service: DockerService,
         stacks_dir: Path | str | None = None,
+        compose_up_timeout: int = 120,
+        default_network: str = "stackpilot_net",
     ):
         self.docker_service = docker_service
         self.stacks_dir = Path(stacks_dir) if stacks_dir else Path("/opt/stacks")
+        self.compose_up_timeout = compose_up_timeout
+        self.default_network = default_network
 
     def _resolve_stacks_dir(self) -> Path:
         if self.stacks_dir.exists():
@@ -64,6 +73,122 @@ class ComposeService:
             return False, "A seção 'services' deve conter ao menos um serviço definido.", None
 
         return True, None, data
+
+    def derive_service_name(self, image_ref: str) -> str:
+        ref = image_ref.strip()
+        if ref.startswith("sha256:"):
+            return "image-" + ref.removeprefix("sha256:")[:12]
+
+        if "@" in ref:
+            ref = ref.split("@", 1)[0]
+
+        colon = ref.rfind(":")
+        if colon != -1 and "/" not in ref[colon:]:
+            ref = ref[:colon]
+
+        name = ref.rsplit("/", 1)[-1].lower()
+        name = re.sub(r"[^a-z0-9._-]", "-", name)
+        if not name:
+            return "app"
+        if name[0].isdigit():
+            return f"app-{name}"
+        return name
+
+    def generate_starter_compose(self, image_ref: str) -> str:
+        service = self.derive_service_name(image_ref)
+        data = {
+            "services": {
+                service: {
+                    "image": image_ref,
+                    "restart": "unless-stopped",
+                    "networks": [self.default_network],
+                }
+            },
+            "networks": {self.default_network: {"external": True}},
+        }
+        return yaml.safe_dump(data, sort_keys=False, default_flow_style=False)
+
+    def extract_images(self, compose_content: str) -> list[str]:
+        data = yaml.safe_load(compose_content) or {}
+        services = data.get("services") or {}
+        images: list[str] = []
+        for service in services.values():
+            if isinstance(service, dict) and "image" in service:
+                images.append(str(service["image"]))
+        return images
+
+    def _run_compose_up(self, file_path: Path) -> tuple[bool, str, bool]:
+        cwd = str(file_path.parent)
+        cmd = ["docker", "compose", "-f", str(file_path), "up", "-d", "--remove-orphans"]
+        try:
+            proc = subprocess.run(
+                cmd,
+                cwd=cwd,
+                capture_output=True,
+                text=True,
+                timeout=self.compose_up_timeout,
+            )
+            output = (proc.stdout + "\n" + proc.stderr).strip()
+            return proc.returncode == 0, output, False
+        except (FileNotFoundError, OSError):
+            pass
+
+        cmd_v1 = ["docker-compose", "-f", str(file_path), "up", "-d"]
+        try:
+            proc = subprocess.run(
+                cmd_v1,
+                cwd=cwd,
+                capture_output=True,
+                text=True,
+                timeout=self.compose_up_timeout,
+            )
+            output = (proc.stdout + "\n" + proc.stderr).strip()
+            return proc.returncode == 0, output, False
+        except (FileNotFoundError, OSError):
+            return False, "", True
+
+    def create_stack(
+        self,
+        stack_name: str,
+        compose_content: str,
+        env_content: str | None = None,
+    ) -> tuple[bool, str]:
+        name = stack_name.strip().lower()
+        if not STACK_NAME_RE.match(name):
+            return (
+                False,
+                f"Nome de stack inválido: {stack_name!r}. Use letras minúsculas, números, '-' e '_'.",
+            )
+
+        is_valid, error_msg, _ = self.validate_compose_yaml(compose_content)
+        if not is_valid:
+            return False, error_msg or "Arquivo Compose inválido."
+
+        base = self._resolve_stacks_dir().resolve()
+        target = (base / name).resolve()
+        if base != target and base not in target.parents:
+            return False, "Caminho de stack inválido."
+
+        if target.exists():
+            return False, f"A stack '{name}' já existe em {target}."
+
+        target.mkdir(parents=True, exist_ok=True)
+        file_path = target / "compose.yaml"
+        file_path.write_text(compose_content, encoding="utf-8")
+        if env_content and env_content.strip():
+            (target / ".env").write_text(env_content, encoding="utf-8")
+
+        ok, output, cli_missing = self._run_compose_up(file_path)
+        if not ok:
+            shutil.rmtree(target, ignore_errors=True)
+            if cli_missing:
+                return False, "O comando 'docker compose' não foi encontrado no PATH."
+            return False, f"Falha ao implantar a stack '{name}':\n{output}"
+
+        message = f"Stack '{name}' criada e implantada com sucesso!"
+        if output:
+            message = f"{message}\n{output}"
+        return True, message
 
     def get_compose_info(self, container_id: str) -> ComposeInfo:
         container = self.docker_service.get_container(container_id)
@@ -283,48 +408,27 @@ class ComposeService:
             return False, str(exc)
 
         # 2. Execute docker compose up
-        cmd = ["docker", "compose", "-f", str(file_path), "up", "-d", "--remove-orphans"]
-        try:
-            proc = subprocess.run(
-                cmd,
-                cwd=str(file_path.parent),
-                capture_output=True,
-                text=True,
-                timeout=120,
+        ok, output, cli_missing = self._run_compose_up(file_path)
+        if ok:
+            msg = (
+                f"Stack implantada com sucesso!\n{output}"
+                if output
+                else "Stack implantada com sucesso!"
             )
-            output = (proc.stdout + "\n" + proc.stderr).strip()
-            if proc.returncode == 0:
-                msg = f"Stack implantada com sucesso via 'docker compose'!\n{output}" if output else "Stack implantada com sucesso via 'docker compose'!"
-                return True, msg
-            else:
-                return False, f"Falha ao executar 'docker compose up' (código {proc.returncode}):\n{output}"
-        except (FileNotFoundError, OSError):
-            # Fallback to legacy docker-compose if v2 is not installed
-            try:
-                cmd_v1 = ["docker-compose", "-f", str(file_path), "up", "-d"]
-                proc = subprocess.run(
-                    cmd_v1,
-                    cwd=str(file_path.parent),
-                    capture_output=True,
-                    text=True,
-                    timeout=120,
-                )
-                output = (proc.stdout + "\n" + proc.stderr).strip()
-                if proc.returncode == 0:
-                    return True, f"Stack implantada com sucesso via 'docker-compose'!\n{output}"
-                else:
-                    return False, f"Falha ao executar 'docker-compose up':\n{output}"
-            except (FileNotFoundError, OSError):
-                # Fallback to restarting the container directly via DockerService
-                try:
-                    self.docker_service.container_action(container_id, "restart")
-                    return True, (
-                        f"Arquivo salvo com sucesso em {file_path}!\n"
-                        "Aviso: O comando 'docker compose' não foi encontrado no PATH do sistema. "
-                        "O container foi reiniciado diretamente através do Docker socket."
-                    )
-                except Exception as exc:
-                    return True, (
-                        f"Arquivo salvo com sucesso em {file_path}!\n"
-                        f"Aviso: O comando 'docker compose' não está disponível e o reinício falhou: {exc}."
-                    )
+            return True, msg
+        if not cli_missing:
+            return False, f"Falha ao executar 'docker compose up':\n{output}"
+
+        # Fallback to restarting the container directly via DockerService
+        try:
+            self.docker_service.container_action(container_id, "restart")
+            return True, (
+                f"Arquivo salvo com sucesso em {file_path}!\n"
+                "Aviso: O comando 'docker compose' não foi encontrado no PATH do sistema. "
+                "O container foi reiniciado diretamente através do Docker socket."
+            )
+        except Exception as exc:
+            return True, (
+                f"Arquivo salvo com sucesso em {file_path}!\n"
+                f"Aviso: O comando 'docker compose' não está disponível e o reinício falhou: {exc}."
+            )
