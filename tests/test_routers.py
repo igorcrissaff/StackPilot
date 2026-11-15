@@ -35,6 +35,7 @@ def test_dashboard_renders_routes_with_base_domain():
         assert "Compose Stacks" in resp.text
         assert "Traefik Routes" in resp.text
         assert "Docker Socket" in resp.text
+        assert 'href="/docker"' in resp.text
         assert 'name="subdomain"' in resp.text
         assert 'name="tls"' not in resp.text
     finally:
