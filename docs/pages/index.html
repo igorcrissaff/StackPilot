@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>StackPilot — Painel Leve para Homelab, Docker & Traefik</title>
+  <title>StackPilot — Painel Leve para Homelab & Docker</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-  <meta name="description" content="Painel de controle leve em Python para gerenciar containers Docker, stacks Compose e rotas Traefik em servidores domésticos e ambientes de TI." />
+  <meta name="description" content="Painel de controle leve em Python para gerenciar containers, stacks Compose e imagens Docker em servidores domésticos e ambientes de TI." />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <script>
@@ -63,7 +63,7 @@
             Controle total do seu <span class="text-sky-400">Homelab</span> sem peso extra.
           </h1>
           <p class="mt-6 text-lg leading-relaxed text-slate-400">
-            Um painel leve para entusiastas de homelab e gestores de TI gerenciarem containers Docker, stacks Compose e subdomínios Traefik — rodando com baixo consumo em Raspberry Pi, mini PCs ou WSL2.
+            Um painel leve para entusiastas de homelab e gestores de TI gerenciarem containers, stacks Compose e imagens Docker — rodando com baixo consumo em Raspberry Pi, mini PCs ou WSL2.
           </p>
           <div class="mt-10 flex flex-wrap items-center justify-center gap-4">
             <a href="#quickstart" class="rounded-lg bg-sky-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-sky-500/20 transition hover:bg-sky-400">
@@ -93,9 +93,9 @@
             <p class="mt-1 text-xs text-sky-400">Estilo Dockge</p>
           </div>
           <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">
-            <p class="text-xs font-medium text-slate-400">Roteamento</p>
-            <p class="mt-1 text-xl font-bold text-white">Traefik v3</p>
-            <p class="mt-1 text-xs text-emerald-400">YAML Dinâmico</p>
+            <p class="text-xs font-medium text-slate-400">Imagens</p>
+            <p class="mt-1 text-xl font-bold text-white">Docker Hub</p>
+            <p class="mt-1 text-xs text-emerald-400">Pull & Remove</p>
           </div>
         </div>
       </div>
@@ -143,9 +143,9 @@
             <div class="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400 ring-1 ring-purple-500/20">
               <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
             </div>
-            <h3 class="text-lg font-semibold text-white">Rotas HTTP com Traefik</h3>
+            <h3 class="text-lg font-semibold text-white">Imagens Docker</h3>
             <p class="mt-2 text-sm leading-relaxed text-slate-400">
-              Crie e remova subdomínios locais (<code class="rounded bg-slate-800 px-1.5 py-0.5 text-purple-300">*.home.arpa</code>) via arquivos YAML dinâmicos do Traefik com validação automática.
+              Liste imagens locais, busque no Docker Hub, baixe e atualize tags e remova imagens antigas com confirmação — tudo direto do painel.
             </p>
           </div>
         </div>
@@ -185,8 +185,8 @@
             </div>
             <pre class="overflow-x-auto leading-relaxed">├── main.py          # FastAPI app & dashboard
 ├── auth.py          # Sessão cookie assinada
-├── routers/         # Rotas HTMX (containers, docker, routes)
-├── services/        # Docker, Docker Hub, Compose & Traefik
+├── routers/         # Rotas HTMX (containers, docker)
+├── services/        # Docker, Docker Hub & Compose
 └── templates/       # Jinja2 + HTMX + Tailwind</pre>
           </div>
         </div>

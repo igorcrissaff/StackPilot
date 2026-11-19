@@ -1,12 +1,15 @@
 from unittest.mock import MagicMock
 import pytest
-from docker.errors import DockerException, NotFound
+from docker.errors import APIError, DockerException, ImageNotFound, NotFound
 
 from app.services.docker_service import (
     ContainerNotFoundError,
     DockerService,
     DockerUnavailableError,
     ImageInfo,
+    ImageInUseError,
+    ImageNotFoundError,
+    ImagePullError,
 )
 
 
@@ -108,3 +111,37 @@ def test_list_images_unavailable():
     with pytest.raises(DockerUnavailableError):
         DockerService(client=client).list_images()
 
+
+def test_remove_image_calls_docker():
+    client = MagicMock()
+    DockerService(client=client).remove_image("nginx:alpine", force=True)
+    client.images.remove.assert_called_once_with("nginx:alpine", force=True)
+
+
+def test_remove_image_not_found():
+    client = MagicMock()
+    client.images.remove.side_effect = ImageNotFound("missing")
+    with pytest.raises(ImageNotFoundError):
+        DockerService(client=client).remove_image("missing:tag")
+
+
+def test_remove_image_in_use():
+    client = MagicMock()
+    client.images.remove.side_effect = APIError(
+        "conflict: unable to remove repository reference (must force) - container is using its referenced image"
+    )
+    with pytest.raises(ImageInUseError):
+        DockerService(client=client).remove_image("nginx:alpine")
+
+
+def test_pull_image_calls_docker():
+    client = MagicMock()
+    DockerService(client=client).pull_image("nginx:alpine")
+    client.images.pull.assert_called_once_with("nginx:alpine")
+
+
+def test_pull_image_failure():
+    client = MagicMock()
+    client.images.pull.side_effect = APIError("pull access denied")
+    with pytest.raises(ImagePullError):
+        DockerService(client=client).pull_image("private/img:latest")

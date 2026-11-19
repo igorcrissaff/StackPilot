@@ -8,7 +8,6 @@ fi
 
 DEPLOY_USER="${STACKPILOT_USER:-${SUDO_USER:-root}}"
 APP_DIR="${APP_DIR:-/opt/stackpilot}"
-TRAEFIK_DYNAMIC_DIR="${TRAEFIK_DYNAMIC_DIR:-$APP_DIR/data/traefik/dynamic}"
 STACKS_DIR="${STACKS_DIR:-$APP_DIR/data/stacks}"
 PY_VERSION="${PY_VERSION:-3.14}"
 
@@ -51,7 +50,7 @@ fi
 sudo -u "$DEPLOY_USER" -H /usr/local/bin/uv python install "$PY_VERSION"
 
 # 6. Data directories and external network
-install -d -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$TRAEFIK_DYNAMIC_DIR" "$STACKS_DIR"
+install -d -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$STACKS_DIR"
 docker network inspect stackpilot_net >/dev/null 2>&1 || docker network create stackpilot_net
 
 echo "Host provisionado. Usuário '$DEPLOY_USER' precisa de novo login para o grupo docker."
