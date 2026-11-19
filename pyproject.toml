@@ -1,7 +1,7 @@
 [project]
 name = "stackpilot"
 version = "0.1.0"
-description = "Lightweight server control panel for Docker and Traefik"
+description = "Lightweight Docker container and image control panel"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",

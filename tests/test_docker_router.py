@@ -4,7 +4,13 @@ from fastapi.testclient import TestClient
 
 from app.dependencies import get_docker_service, get_hub_cache
 from app.main import app
-from app.services.docker_service import ContainerInfo, ImageInUseError, ImageInfo, ImagePullError
+from app.services.docker_service import (
+    ContainerInfo,
+    DockerUnavailableError,
+    ImageInUseError,
+    ImageInfo,
+    ImagePullError,
+)
 from app.services.hub_cache import UsedImage
 
 
@@ -253,5 +259,40 @@ def test_pull_image_error_shows_message():
         r = _client().post("/docker/images/pull", data={"image": "bad/image"})
         assert r.status_code == 200
         assert "falha ao baixar" in r.text
+    finally:
+        app.dependency_overrides.clear()
+
+def test_remove_untagged_image_by_id():
+    mock_docker = MagicMock()
+    _image_override(mock_docker)
+    try:
+        r = _client().post("/docker/images/remove", data={"image": "sha256:def"})
+        assert r.status_code == 200
+        mock_docker.remove_image.assert_called_once_with("sha256:def", force=False)
+        assert "removida" in r.text.lower()
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_remove_image_docker_unavailable_shows_error():
+    mock_docker = MagicMock()
+    mock_docker.remove_image.side_effect = DockerUnavailableError("daemon offline")
+    _image_override(mock_docker)
+    try:
+        r = _client().post("/docker/images/remove", data={"image": "nginx:alpine"})
+        assert r.status_code == 200
+        assert "daemon offline" in r.text
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_pull_image_docker_unavailable_shows_error():
+    mock_docker = MagicMock()
+    mock_docker.pull_image.side_effect = DockerUnavailableError("daemon offline")
+    _image_override(mock_docker)
+    try:
+        r = _client().post("/docker/images/pull", data={"image": "nginx:alpine"})
+        assert r.status_code == 200
+        assert "daemon offline" in r.text
     finally:
         app.dependency_overrides.clear()

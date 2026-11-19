@@ -149,3 +149,13 @@ def test_root_compose_has_no_traefik():
     data = yaml.safe_load(ROOT_COMPOSE.read_text(encoding="utf-8"))
     assert "traefik" not in data["services"]
     assert "./data:/opt/stackpilot" in data["services"]["stackpilot"]["volumes"]
+
+def test_no_traefik_references_in_app_landing_and_packaging():
+    paths = [
+        *Path("app/templates").rglob("*.html"),
+        Path("docs/pages/index.html"),
+        Path("pyproject.toml"),
+        Path("README.md"),
+    ]
+    offenders = [str(p) for p in paths if "Traefik" in p.read_text(encoding="utf-8")]
+    assert offenders == []
