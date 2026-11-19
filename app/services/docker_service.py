@@ -1,5 +1,5 @@
 import docker
-from docker.errors import DockerException, NotFound
+from docker.errors import APIError, DockerException, ImageNotFound, NotFound
 from pydantic import BaseModel
 
 
@@ -8,6 +8,18 @@ class DockerUnavailableError(Exception):
 
 
 class ContainerNotFoundError(Exception):
+    pass
+
+
+class ImageNotFoundError(Exception):
+    pass
+
+
+class ImageInUseError(Exception):
+    pass
+
+
+class ImagePullError(Exception):
     pass
 
 
@@ -84,6 +96,41 @@ class DockerService:
             )
             for img in images
         ]
+
+    def remove_image(self, ref: str, force: bool = False) -> None:
+        try:
+            self._get_client().images.remove(ref, force=force)
+        except NotFound as exc:
+            raise ImageNotFoundError(f"Imagem '{ref}' não encontrada") from exc
+        except ImageNotFound as exc:
+            raise ImageNotFoundError(f"Imagem '{ref}' não encontrada") from exc
+        except APIError as exc:
+            message = str(exc).lower()
+            if (
+                exc.status_code == 409
+                or "in use" in message
+                or "being used" in message
+                or "is using" in message
+                or "unable to remove repository reference" in message
+            ):
+                raise ImageInUseError(
+                    f"Imagem '{ref}' está em uso por um container; pare/remova o container antes."
+                ) from exc
+            raise DockerUnavailableError(f"Falha ao remover imagem: {exc}") from exc
+        except DockerException as exc:
+            raise DockerUnavailableError(f"Docker daemon unavailable: {exc}") from exc
+
+    def pull_image(self, ref: str) -> None:
+        try:
+            self._get_client().images.pull(ref)
+        except NotFound as exc:
+            raise ImagePullError(f"Imagem '{ref}' não encontrada no registry") from exc
+        except ImageNotFound as exc:
+            raise ImagePullError(f"Imagem '{ref}' não encontrada no registry") from exc
+        except APIError as exc:
+            raise ImagePullError(f"Falha ao baixar imagem '{ref}': {exc}") from exc
+        except DockerException as exc:
+            raise DockerUnavailableError(f"Docker daemon unavailable: {exc}") from exc
 
     def get_container(self, container_id: str):
         try:
