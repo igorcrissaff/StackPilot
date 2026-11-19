@@ -10,7 +10,13 @@ from app.dependencies import (
     templates,
 )
 from app.services.compose_service import ComposeService
-from app.services.docker_service import DockerService, DockerUnavailableError
+from app.services.docker_service import (
+    DockerService,
+    DockerUnavailableError,
+    ImageInUseError,
+    ImageNotFoundError,
+    ImagePullError,
+)
 from app.services.dockerhub_service import (
     DockerHubService,
     HubUnavailableError,
@@ -82,6 +88,66 @@ def docker_images(
             "images_error": images_error,
         },
     )
+
+def _render_images(
+    request: Request,
+    docker_svc: DockerService,
+    hub_cache: HubCache,
+    message: str | None = None,
+    error: str | None = None,
+) -> HTMLResponse:
+    images, used_images, images_error = _load_images(docker_svc, hub_cache)
+    return templates.TemplateResponse(
+        request,
+        "partials/image_list.html",
+        {
+            "images": images,
+            "used_images": used_images,
+            "images_error": images_error,
+            "message": message,
+            "error": error,
+        },
+    )
+
+
+@router.post("/docker/images/remove", response_class=HTMLResponse)
+def remove_image(
+    request: Request,
+    image: str = Form(...),
+    force: bool = Form(False),
+    user: str = Depends(require_auth),
+    docker_svc: DockerService = Depends(get_docker_service),
+    hub_cache: HubCache = Depends(get_hub_cache),
+):
+    message = None
+    error = None
+    ref = image.strip()
+    try:
+        docker_svc.remove_image(ref, force=force)
+        message = f"Imagem {ref} removida."
+    except (ImageNotFoundError, ImageInUseError, DockerUnavailableError) as exc:
+        error = str(exc)
+    return _render_images(request, docker_svc, hub_cache, message=message, error=error)
+
+
+@router.post("/docker/images/pull", response_class=HTMLResponse)
+def pull_image(
+    request: Request,
+    image: str = Form(...),
+    user: str = Depends(require_auth),
+    docker_svc: DockerService = Depends(get_docker_service),
+    hub_cache: HubCache = Depends(get_hub_cache),
+):
+    message = None
+    error = None
+    ref = image.strip()
+    try:
+        docker_svc.pull_image(ref)
+        message = f"Imagem {ref} baixada/atualizada."
+    except (ImagePullError, DockerUnavailableError) as exc:
+        error = str(exc)
+    return _render_images(request, docker_svc, hub_cache, message=message, error=error)
+
 
 @router.get("/hub/search", response_class=HTMLResponse)
 def hub_search(
