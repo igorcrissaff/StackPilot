@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
-from app.main import app, get_docker_service, get_traefik_service
+from app.main import app
+from app.dependencies import get_docker_service
 
 
 def test_unauthenticated_redirects_to_login():
@@ -19,11 +20,9 @@ def test_login_invalid_credentials():
 def test_login_valid_credentials_and_logout():
     mock_docker = MagicMock()
     mock_docker.list_containers.return_value = []
-    mock_traefik = MagicMock()
-    mock_traefik.list_routes.return_value = []
+    mock_docker.list_images.return_value = []
 
     app.dependency_overrides[get_docker_service] = lambda: mock_docker
-    app.dependency_overrides[get_traefik_service] = lambda: mock_traefik
     try:
         client = TestClient(app)
         resp = client.post(

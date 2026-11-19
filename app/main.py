@@ -3,20 +3,13 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.auth import require_auth, verify_credentials
 from app.config import get_settings
-from app.dependencies import (
-    get_docker_service,
-    get_effective_base_domain,
-    get_traefik_service,
-    templates,
-)
-from app.routers import containers, docker, routes as routes_router, settings as settings_router
+from app.dependencies import get_docker_service, templates
+from app.routers import containers, docker
 from app.services.docker_service import DockerUnavailableError
-from app.services.traefik_service import TraefikService
 
 settings = get_settings()
 app = FastAPI(title="StackPilot")
@@ -27,8 +20,6 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 app.include_router(containers.router)
 app.include_router(docker.router)
-app.include_router(routes_router.router)
-app.include_router(settings_router.router)
 
 
 @app.get("/login", response_class=HTMLResponse)
@@ -65,21 +56,19 @@ def dashboard(
     request: Request,
     user: str = Depends(require_auth),
     docker_svc=Depends(get_docker_service),
-    traefik_svc: TraefikService = Depends(get_traefik_service),
-    base_domain: str = Depends(get_effective_base_domain),
 ):
     container_error = None
-    route_error = None
+    images_error = None
     containers = []
-    routes = []
+    images_count = 0
     try:
         containers = docker_svc.list_containers()
     except DockerUnavailableError as exc:
         container_error = str(exc)
     try:
-        routes = traefik_svc.list_routes()
-    except Exception as exc:
-        route_error = str(exc)
+        images_count = len(docker_svc.list_images())
+    except DockerUnavailableError as exc:
+        images_error = str(exc)
 
     running_containers = sum(1 for c in containers if getattr(c, "status", "") == "running")
     stopped_containers = len(containers) - running_containers
@@ -93,11 +82,10 @@ def dashboard(
             "user": user,
             "containers": containers,
             "container_error": container_error,
-            "routes": routes,
-            "route_error": route_error,
+            "images_count": images_count,
+            "images_error": images_error,
             "running_containers": running_containers,
             "stopped_containers": stopped_containers,
-            "base_domain": base_domain,
             "stacks_count": stacks_count,
         },
     )
