@@ -19,7 +19,7 @@ uv venv --python "$PY_VERSION" .venv
 uv pip install --python .venv/bin/python -e ".[dev]"
 
 if [ -f .env ]; then
-  if ! grep -q "^TRAEFIK_DYNAMIC_DIR=${APP_DIR}/" .env || ! grep -q "^STACKS_DIR=${APP_DIR}/" .env; then
+  if ! grep -q "^STACKS_DIR=${APP_DIR}/" .env; then
     backup=".env.bak.$(date +%s)"
     echo "Aviso: .env existente não aponta para paths em ${APP_DIR}; backup em ${backup}." >&2
     mv .env "$backup"
@@ -31,9 +31,8 @@ if [ ! -f .env ]; then
   chmod 600 .env
 fi
 
-TRAEFIK_DYNAMIC_DIR_VALUE="$(grep -E '^TRAEFIK_DYNAMIC_DIR=' .env | cut -d= -f2-)"
 STACKS_DIR_VALUE="$(grep -E '^STACKS_DIR=' .env | cut -d= -f2-)"
-mkdir -p "$TRAEFIK_DYNAMIC_DIR_VALUE" "$STACKS_DIR_VALUE"
+mkdir -p "$STACKS_DIR_VALUE"
 
 if grep -q '^STACKPILOT_PASSWORD=admin$' .env || grep -q '^SECRET_KEY=change-me-in-production$' .env; then
   echo "AVISO: credenciais ou SECRET_KEY padrão em .env. Edite antes de expor na LAN e reinicie o serviço." >&2
@@ -43,7 +42,5 @@ sed -e "s#__USER__#${SERVICE_USER}#g" -e "s#__APP_DIR__#${APP_DIR}#g" \
   deploy/stackpilot.service.template | sudo tee /etc/systemd/system/stackpilot.service >/dev/null
 sudo systemctl daemon-reload
 sudo systemctl enable --now stackpilot.service
-
-docker compose --env-file "$APP_DIR/.env" -f deploy/docker-compose.traefik.yml up -d
 
 echo "StackPilot ativo. Veja: systemctl status stackpilot"
