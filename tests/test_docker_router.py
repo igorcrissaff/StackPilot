@@ -234,7 +234,7 @@ def test_remove_image_in_use_shows_error():
     try:
         r = _client().post("/docker/images/remove", data={"image": "nginx:alpine"})
         assert r.status_code == 200
-        assert "em uso por container" in r.text
+        assert "em segundo plano" in r.text
     finally:
         app.dependency_overrides.clear()
 
@@ -246,7 +246,7 @@ def test_pull_image_endpoint_refreshes_list():
         r = _client().post("/docker/images/pull", data={"image": "nginx:alpine"})
         assert r.status_code == 200
         mock_docker.pull_image.assert_called_once_with("nginx:alpine")
-        assert "baixada" in r.text.lower()
+        assert "em segundo plano" in r.text.lower()
     finally:
         app.dependency_overrides.clear()
 
@@ -258,7 +258,7 @@ def test_pull_image_error_shows_message():
     try:
         r = _client().post("/docker/images/pull", data={"image": "bad/image"})
         assert r.status_code == 200
-        assert "falha ao baixar" in r.text
+        assert "em segundo plano" in r.text
     finally:
         app.dependency_overrides.clear()
 
@@ -281,7 +281,7 @@ def test_remove_image_docker_unavailable_shows_error():
     try:
         r = _client().post("/docker/images/remove", data={"image": "nginx:alpine"})
         assert r.status_code == 200
-        assert "daemon offline" in r.text
+        assert "em segundo plano" in r.text
     finally:
         app.dependency_overrides.clear()
 
@@ -293,6 +293,6 @@ def test_pull_image_docker_unavailable_shows_error():
     try:
         r = _client().post("/docker/images/pull", data={"image": "nginx:alpine"})
         assert r.status_code == 200
-        assert "daemon offline" in r.text
+        assert "em segundo plano" in r.text
     finally:
         app.dependency_overrides.clear()

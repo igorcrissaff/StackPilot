@@ -7,6 +7,7 @@ from app.dependencies import (
     get_docker_service,
     get_dockerhub_service,
     get_hub_cache,
+    get_task_service,
     templates,
 )
 from app.services.compose_service import ComposeService
@@ -23,6 +24,7 @@ from app.services.dockerhub_service import (
     InvalidImageReferenceError,
 )
 from app.services.hub_cache import HubCache
+from app.services.task_service import TaskService
 
 router = APIRouter(tags=["docker"])
 
@@ -111,42 +113,40 @@ def _render_images(
 
 
 @router.post("/docker/images/remove", response_class=HTMLResponse)
-def remove_image(
+async def remove_image(
     request: Request,
     image: str = Form(...),
     force: bool = Form(False),
     user: str = Depends(require_auth),
     docker_svc: DockerService = Depends(get_docker_service),
     hub_cache: HubCache = Depends(get_hub_cache),
+    task_svc: TaskService = Depends(get_task_service),
 ):
-    message = None
-    error = None
     ref = image.strip()
-    try:
-        docker_svc.remove_image(ref, force=force)
-        message = f"Imagem {ref} removida."
-    except (ImageNotFoundError, ImageInUseError, DockerUnavailableError) as exc:
-        error = str(exc)
-    return _render_images(request, docker_svc, hub_cache, message=message, error=error)
+    task_svc.enqueue(
+        f"Remover imagem {ref}",
+        lambda: docker_svc.remove_image(ref, force=force),
+    )
+    message = f"Remoção da imagem {ref} iniciada em segundo plano."
+    return _render_images(request, docker_svc, hub_cache, message=message, error=None)
 
 
 @router.post("/docker/images/pull", response_class=HTMLResponse)
-def pull_image(
+async def pull_image(
     request: Request,
     image: str = Form(...),
     user: str = Depends(require_auth),
     docker_svc: DockerService = Depends(get_docker_service),
     hub_cache: HubCache = Depends(get_hub_cache),
+    task_svc: TaskService = Depends(get_task_service),
 ):
-    message = None
-    error = None
     ref = image.strip()
-    try:
-        docker_svc.pull_image(ref)
-        message = f"Imagem {ref} baixada/atualizada."
-    except (ImagePullError, DockerUnavailableError) as exc:
-        error = str(exc)
-    return _render_images(request, docker_svc, hub_cache, message=message, error=error)
+    task_svc.enqueue(
+        f"Pull da imagem {ref}",
+        lambda: docker_svc.pull_image(ref),
+    )
+    message = f"Pull da imagem {ref} iniciado em segundo plano."
+    return _render_images(request, docker_svc, hub_cache, message=message, error=None)
 
 
 @router.get("/hub/search", response_class=HTMLResponse)
