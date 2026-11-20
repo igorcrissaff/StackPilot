@@ -16,7 +16,7 @@ from app.dependencies import (
     get_metrics_settings,
     templates,
 )
-from app.routers import containers, docker, metrics
+from app.routers import containers, docker, metrics, settings as settings_router
 from app.services.docker_service import DockerUnavailableError
 from app.services.metrics_collector import MetricsCollector
 from app.services.metrics_settings import DEFAULT_REFRESH_SECONDS
@@ -48,6 +48,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(containers.router)
 app.include_router(docker.router)
 app.include_router(metrics.router)
+app.include_router(settings_router.router)
 
 
 @app.get("/login", response_class=HTMLResponse)
