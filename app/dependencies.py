@@ -8,6 +8,7 @@ from app.services.compose_service import ComposeService
 from app.services.docker_service import DockerService
 from app.services.dockerhub_service import DockerHubService
 from app.services.hub_cache import HubCache
+from app.services.metrics_service import MetricsService
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,10 @@ def get_dockerhub_service() -> DockerHubService:
 
 def get_docker_service() -> DockerService:
     return DockerService()
+
+
+def get_metrics_service() -> MetricsService:
+    return MetricsService()
 
 
 def get_compose_service() -> ComposeService:

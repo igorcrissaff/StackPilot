@@ -1,0 +1,110 @@
+<div id="system-metrics"
+     class="bg-[#161e2e] border border-[#232f45] rounded-xl p-5 shadow-xl"
+     hx-get="/metrics"
+     hx-trigger="load, every 10s"
+     hx-swap="outerHTML">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-[#232f45]">
+        <div class="flex items-center gap-2.5">
+            <div class="p-1.5 rounded-lg bg-violet-500/10 text-violet-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+                </svg>
+            </div>
+            <div>
+                <h2 class="text-base font-semibold text-white">Servidor</h2>
+                <p class="text-xs text-slate-400">
+                    {% if metrics %}
+                        {{ metrics.hostname }} &middot; {{ metrics.os_name }} {{ metrics.os_version }} &middot; kernel {{ metrics.kernel }} &middot; {{ metrics.architecture }}
+                    {% else %}
+                        Métricas do host
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        {% if metrics %}
+        <span class="text-xs text-slate-400 font-medium flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+            atualiza a cada 10s
+        </span>
+        {% endif %}
+    </div>
+
+    {% if error %}
+        <p class="text-sm text-rose-400">{{ error }}</p>
+    {% elif metrics %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-4 rounded-xl bg-[#0f1521] border border-[#232f45]">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium uppercase tracking-wider text-slate-400">CPU</span>
+                <span class="text-sm font-semibold text-white">{{ metrics.cpu_percent|round(1) }}%</span>
+            </div>
+            <div class="h-2 rounded-full bg-[#161e2e] overflow-hidden mt-3">
+                <div class="h-full bg-sky-500" style="width: {{ metrics.cpu_percent }}%"></div>
+            </div>
+            <span class="block text-xs text-slate-400 mt-2">{{ metrics.cpu_count }} núcleos</span>
+        </div>
+
+        <div class="p-4 rounded-xl bg-[#0f1521] border border-[#232f45]">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Memória</span>
+                <span class="text-sm font-semibold text-white">{{ metrics.memory_percent|round(1) }}%</span>
+            </div>
+            <div class="h-2 rounded-full bg-[#161e2e] overflow-hidden mt-3">
+                <div class="h-full bg-emerald-500" style="width: {{ metrics.memory_percent }}%"></div>
+            </div>
+            <span class="block text-xs text-slate-400 mt-2">
+                {{ (metrics.memory_used / 1073741824)|round(1) }} GB de {{ (metrics.memory_total / 1073741824)|round(1) }} GB
+            </span>
+        </div>
+
+        <div class="p-4 rounded-xl bg-[#0f1521] border border-[#232f45]">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Disco /</span>
+                <span class="text-sm font-semibold text-white">{{ metrics.disk_percent|round(1) }}%</span>
+            </div>
+            <div class="h-2 rounded-full bg-[#161e2e] overflow-hidden mt-3">
+                <div class="h-full bg-amber-500" style="width: {{ metrics.disk_percent }}%"></div>
+            </div>
+            <span class="block text-xs text-slate-400 mt-2">
+                {{ (metrics.disk_used / 1073741824)|round(1) }} GB de {{ (metrics.disk_total / 1073741824)|round(1) }} GB
+            </span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+        <div class="p-3 rounded-lg bg-[#0f1521] border border-[#232f45]">
+            <span class="block text-xs uppercase tracking-wider text-slate-400">Load 1m</span>
+            <span class="block text-sm font-semibold text-white mt-1">{{ metrics.load_1|round(2) if metrics.load_1 is not none else "—" }}</span>
+        </div>
+        <div class="p-3 rounded-lg bg-[#0f1521] border border-[#232f45]">
+            <span class="block text-xs uppercase tracking-wider text-slate-400">Load 5m</span>
+            <span class="block text-sm font-semibold text-white mt-1">{{ metrics.load_5|round(2) if metrics.load_5 is not none else "—" }}</span>
+        </div>
+        <div class="p-3 rounded-lg bg-[#0f1521] border border-[#232f45]">
+            <span class="block text-xs uppercase tracking-wider text-slate-400">Load 15m</span>
+            <span class="block text-sm font-semibold text-white mt-1">{{ metrics.load_15|round(2) if metrics.load_15 is not none else "—" }}</span>
+        </div>
+        <div class="p-3 rounded-lg bg-[#0f1521] border border-[#232f45]">
+            <span class="block text-xs uppercase tracking-wider text-slate-400">Uptime</span>
+            <span class="block text-sm font-semibold text-white mt-1">
+                {{ metrics.uptime_seconds // 86400 }}d {{ (metrics.uptime_seconds % 86400) // 3600 }}h {{ (metrics.uptime_seconds % 3600) // 60 }}m
+            </span>
+        </div>
+    </div>
+
+    {% if metrics.swap_total > 0 %}
+    <div class="p-3 rounded-lg bg-[#0f1521] border border-[#232f45] mt-4">
+        <div class="flex items-center justify-between">
+            <span class="text-xs uppercase tracking-wider text-slate-400">Swap</span>
+            <span class="text-sm font-semibold text-white">{{ metrics.swap_percent|round(1) }}%</span>
+        </div>
+        <div class="h-2 rounded-full bg-[#161e2e] overflow-hidden mt-2">
+            <div class="h-full bg-violet-500" style="width: {{ metrics.swap_percent }}%"></div>
+        </div>
+        <span class="block text-xs text-slate-400 mt-2">
+            {{ (metrics.swap_used / 1073741824)|round(1) }} GB de {{ (metrics.swap_total / 1073741824)|round(1) }} GB
+        </span>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
