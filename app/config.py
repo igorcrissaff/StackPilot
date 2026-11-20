@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production"
     stacks_dir: Path = Path("/opt/stacks")
     hub_db_path: Path = Path("/opt/stackpilot/stackpilot.db")
+    metrics_db_path: Path = Path("/opt/stackpilot/metrics.db")
     hub_cache_ttl_seconds: int = 86400
     hub_api_base: str = "https://hub.docker.com"
     hub_request_timeout_seconds: float = 10.0
