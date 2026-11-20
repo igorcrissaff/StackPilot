@@ -119,12 +119,43 @@
     </div>
     {% endif %}
 
-    <div class="mt-4 p-4 rounded-xl bg-[#0f1521] border border-[#232f45]">
+    <div class="mt-4">
         <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Consumo recente</span>
-            <span class="text-[11px] text-slate-500">CPU · Memória · Disco{% if metrics.swap_total > 0 %} · Swap{% endif %}</span>
+            <span class="text-[11px] text-slate-500">janela de {{ multiplier * interval }}s</span>
         </div>
-        <canvas id="metrics-chart" height="120"></canvas>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 rounded-xl bg-[#0f1521] border border-[#232f45]">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-medium uppercase tracking-wider text-slate-400">CPU</span>
+                    <span class="text-[11px] text-slate-500">%</span>
+                </div>
+                <div class="h-36"><canvas id="metrics-chart-cpu"></canvas></div>
+            </div>
+            <div class="p-4 rounded-xl bg-[#0f1521] border border-[#232f45]">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Memória</span>
+                    <span class="text-[11px] text-slate-500">%</span>
+                </div>
+                <div class="h-36"><canvas id="metrics-chart-memory"></canvas></div>
+            </div>
+            <div class="p-4 rounded-xl bg-[#0f1521] border border-[#232f45]">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Disco /</span>
+                    <span class="text-[11px] text-slate-500">%</span>
+                </div>
+                <div class="h-36"><canvas id="metrics-chart-disk"></canvas></div>
+            </div>
+            {% if metrics.swap_total > 0 %}
+            <div class="p-4 rounded-xl bg-[#0f1521] border border-[#232f45]">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Swap</span>
+                    <span class="text-[11px] text-slate-500">%</span>
+                </div>
+                <div class="h-36"><canvas id="metrics-chart-swap"></canvas></div>
+            </div>
+            {% endif %}
+        </div>
     </div>
     <script type="application/json" id="metrics-chart-data">{{ chart|tojson }}</script>
     {% endif %}
