@@ -10,6 +10,7 @@ from app.services.dockerhub_service import DockerHubService
 from app.services.hub_cache import HubCache
 from app.services.metrics_history import MetricsHistoryRepository
 from app.services.metrics_service import MetricsService
+from app.services.metrics_settings import MetricsSettingsStore
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,12 @@ def get_metrics_service() -> MetricsService:
 
 def get_metrics_history() -> MetricsHistoryRepository:
     return MetricsHistoryRepository(
+        _resolve_db_path(get_settings().metrics_db_path, "metrics.db")
+    )
+
+
+def get_metrics_settings() -> MetricsSettingsStore:
+    return MetricsSettingsStore(
         _resolve_db_path(get_settings().metrics_db_path, "metrics.db")
     )
 
