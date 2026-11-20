@@ -13,6 +13,7 @@ from app.services.metrics_collector import MetricsCollector
 from app.services.metrics_history import MetricsHistoryRepository
 from app.services.metrics_service import MetricsService
 from app.services.metrics_settings import MetricsSettingsStore
+from app.services.task_service import TaskService
 
 logger = logging.getLogger(__name__)
 
@@ -83,3 +84,12 @@ def get_compose_service() -> ComposeService:
         compose_up_timeout=settings.compose_up_timeout_seconds,
         default_network=settings.stackpilot_network,
     )
+
+
+def get_task_service(request: Request) -> TaskService:
+    svc = getattr(request.app.state, "task_service", None)
+    if svc is None:
+        svc = TaskService(_resolve_db_path(get_settings().hub_db_path))
+        svc.init_db()
+        request.app.state.task_service = svc
+    return svc

@@ -9,6 +9,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.auth import require_auth, verify_credentials
 from app.config import get_settings
 from app.dependencies import (
+    _resolve_db_path,
     get_docker_service,
     get_metrics_collector,
     get_metrics_history,
@@ -20,12 +21,18 @@ from app.routers import containers, docker, metrics, settings as settings_router
 from app.services.docker_service import DockerUnavailableError
 from app.services.metrics_collector import MetricsCollector
 from app.services.metrics_settings import DEFAULT_REFRESH_SECONDS
+from app.services.task_service import TaskService
 
 settings = get_settings()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    task_service = TaskService(_resolve_db_path(get_settings().hub_db_path))
+    task_service.init_db()
+    task_service.mark_interrupted_tasks()
+    app.state.task_service = task_service
+
     collector = MetricsCollector(
         get_metrics_service(),
         get_metrics_history(),
