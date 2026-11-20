@@ -97,6 +97,11 @@
         if (!data || typeof Chart === "undefined") {
             return;
         }
+        var swapCard = document.getElementById("metrics-chart-swap-card");
+        if (swapCard) {
+            swapCard.style.display = data.swap_total > 0 ? "" : "none";
+        }
+
         var labels = formatLabels(data.labels);
         CHARTS.forEach(function (def) {
             renderChart(def, data, labels);

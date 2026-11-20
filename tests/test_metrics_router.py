@@ -103,10 +103,9 @@ def test_metrics_includes_chart_payload():
         assert 'id="metrics-window"' in r.text
         assert "every 10s" in r.text
         assert 'value="10" selected' in r.text
-        assert 'id="metrics-chart-cpu"' in r.text
-        assert 'id="metrics-chart-memory"' in r.text
-        assert 'id="metrics-chart-disk"' in r.text
-        assert 'id="metrics-chart-swap"' not in r.text
+        assert 'id="metrics-chart-cpu"' not in r.text
+        assert 'id="metrics-chart-memory"' not in r.text
+        assert 'id="metrics-chart-disk"' not in r.text
     finally:
         app.dependency_overrides.clear()
 
@@ -164,5 +163,9 @@ def test_dashboard_includes_metrics_section():
         assert r.status_code == 200
         assert 'id="system-metrics"' in r.text
         assert 'hx-get="/metrics"' in r.text
+        assert 'id="metrics-chart-cpu"' in r.text
+        assert 'id="metrics-chart-memory"' in r.text
+        assert 'id="metrics-chart-disk"' in r.text
+        assert 'id="metrics-chart-swap"' in r.text
     finally:
         app.dependency_overrides.clear()

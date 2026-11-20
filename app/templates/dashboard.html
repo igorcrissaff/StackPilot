@@ -292,6 +292,15 @@
                 {% include "partials/system_metrics.html" %}
             </section>
 
+            <!-- Host Metrics Charts (stable, outside the polling swap) -->
+            <section id="server-charts-section">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Consumo recente</span>
+                    <span class="text-[11px] text-slate-500">janela de {{ multiplier * interval }}s</span>
+                </div>
+                {% include "partials/system_charts.html" %}
+            </section>
+
             <!-- Main Two-Column / Split Layout -->
             <div class="space-y-6">
                 <!-- Section 1: Containers List & Compose & Logs -->
