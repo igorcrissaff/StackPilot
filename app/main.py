@@ -7,8 +7,8 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.auth import require_auth, verify_credentials
 from app.config import get_settings
-from app.dependencies import get_docker_service, templates
-from app.routers import containers, docker
+from app.dependencies import get_docker_service, get_metrics_service, templates
+from app.routers import containers, docker, metrics
 from app.services.docker_service import DockerUnavailableError
 
 settings = get_settings()
@@ -20,6 +20,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 app.include_router(containers.router)
 app.include_router(docker.router)
+app.include_router(metrics.router)
 
 
 @app.get("/login", response_class=HTMLResponse)
@@ -56,11 +57,18 @@ def dashboard(
     request: Request,
     user: str = Depends(require_auth),
     docker_svc=Depends(get_docker_service),
+    metrics_svc=Depends(get_metrics_service),
 ):
     container_error = None
     images_error = None
+    metrics = None
+    metrics_error = None
     containers = []
     images_count = 0
+    try:
+        metrics = metrics_svc.collect()
+    except Exception as exc:
+        metrics_error = f"Não foi possível coletar métricas: {exc}"
     try:
         containers = docker_svc.list_containers()
     except DockerUnavailableError as exc:
@@ -87,5 +95,7 @@ def dashboard(
             "running_containers": running_containers,
             "stopped_containers": stopped_containers,
             "stacks_count": stacks_count,
+            "metrics": metrics,
+            "metrics_error": metrics_error,
         },
     )
