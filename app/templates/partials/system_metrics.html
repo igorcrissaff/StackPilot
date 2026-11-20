@@ -122,7 +122,7 @@
     <div class="mt-4 p-4 rounded-xl bg-[#0f1521] border border-[#232f45]">
         <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Consumo recente</span>
-            <span class="text-[11px] text-slate-500">CPU · Memória · Disco · Swap</span>
+            <span class="text-[11px] text-slate-500">CPU · Memória · Disco{% if metrics.swap_total > 0 %} · Swap{% endif %}</span>
         </div>
         <canvas id="metrics-chart" height="120"></canvas>
     </div>

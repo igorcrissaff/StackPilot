@@ -5,8 +5,9 @@ GB = 1024 ** 3
 
 
 class FakeMetrics:
-    def __init__(self):
+    def __init__(self, swap_total=0):
         self.cpu = 0.0
+        self.swap_total = swap_total
 
     def collect(self):
         return SystemMetrics(
@@ -19,7 +20,7 @@ class FakeMetrics:
             memory_total=4 * GB,
             memory_percent=25.0,
             swap_used=0,
-            swap_total=0,
+            swap_total=self.swap_total,
             swap_percent=0.0,
             disk_used=GB,
             disk_total=10 * GB,
@@ -85,5 +86,40 @@ def test_chart_series_has_multiplier_points():
     data = c.chart_series(10, 10, now=now)
     assert len(data["labels"]) == 10
     assert len(data["cpu"]) == 10
-    assert data["swap"] == [0.0] * 10
+    assert data["swap"] == [None] * 10
+    assert data["swap_total"] == 0
     assert data["cpu"][-1] is not None
+
+
+def test_chart_series_keeps_swap_when_present():
+    c = _collector(interval=10)
+    svc = FakeMetrics(swap_total=1024)
+    now = 10_000.0
+    for i in range(11):
+        c.record(svc.collect(), now=now - i * 10)
+    data = c.chart_series(10, 10, now=now)
+    assert data["swap_total"] == 1024
+    assert data["swap"] == [0.0] * 10
+
+
+def test_concurrent_record_and_chart_does_not_error():
+    import threading
+
+    c = _collector(interval=5)
+    svc = FakeMetrics()
+    stop = threading.Event()
+
+    def producer():
+        i = 0
+        while not stop.is_set():
+            c.record(svc.collect(), now=float(1000 + i))
+            i += 1
+
+    thread = threading.Thread(target=producer)
+    thread.start()
+    try:
+        for _ in range(200):
+            c.chart_series(10, 5, now=1500.0)
+    finally:
+        stop.set()
+        thread.join()
