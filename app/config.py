@@ -1,10 +1,17 @@
 from functools import lru_cache
 from pathlib import Path
+import platform
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    host_info: dict = {
+        "hostname": platform.node(),
+        "host_os": platform.system() + " " + platform.release(),
+        "kernel_version": platform.version(),
+    }
 
     stackpilot_user: str = "admin"
     stackpilot_password: str = "admin"

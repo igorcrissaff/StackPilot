@@ -124,6 +124,7 @@ def dashboard(
         "dashboard.html",
         {
             "user": user,
+            "host": settings.host_info,
             "containers": containers,
             "container_error": container_error,
             "images_count": images_count,

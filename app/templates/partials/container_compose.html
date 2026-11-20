@@ -1,4 +1,6 @@
-<div id="container-compose" class="mt-4 rounded-xl border border-[#232f45] bg-[#111722] shadow-2xl overflow-hidden">
+<div id="container-compose"
+     x-data="composeEditor"
+     class="mt-4 rounded-xl border border-[#232f45] bg-[#111722] shadow-2xl overflow-hidden">
     <!-- Header -->
     <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-[#0f1521] border-b border-[#232f45]">
         <div class="flex items-center gap-2.5 flex-wrap">
@@ -27,7 +29,8 @@
             </div>
         </div>
         <button type="button"
-                onclick="document.getElementById('container-compose').outerHTML='<div id=\'container-compose\' class=\'mt-4\'></div>'"
+                data-action="close-panel"
+                data-panel="container-compose"
                 class="text-xs text-slate-400 hover:text-white px-2.5 py-1 rounded bg-[#161e2e] hover:bg-slate-800 border border-[#232f45] transition">
             ✕ Fechar
         </button>
@@ -40,7 +43,7 @@
             <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <span><strong>Modo Dockge:</strong> Nenhum arquivo compose foi encontrado no disco. Uma definição inicial foi gerada automaticamente a partir da configuração do container atual.</span>
+            <span><strong>Modo Automático:</strong> Nenhum arquivo compose foi encontrado no disco. Uma definição inicial foi gerada automaticamente a partir da configuração do container atual.</span>
         </div>
         {% endif %}
 
@@ -81,18 +84,24 @@
         {% if info %}
         <!-- Form with Tabs for compose.yaml and .env -->
         <form hx-post="/containers/{{ container_id }}/compose" hx-target="#container-compose" hx-swap="outerHTML" class="space-y-3">
-            <!-- Tabs Header (Portainer style) -->
+            <!-- Tabs Header -->
             <div class="flex items-center gap-1 border-b border-[#232f45] text-xs">
-                <button type="button" id="tab-btn-yaml"
-                        onclick="document.getElementById('panel-yaml').classList.remove('hidden'); document.getElementById('panel-env').classList.add('hidden'); this.className='px-3.5 py-2 font-medium border-b-2 border-sky-500 text-white flex items-center gap-1.5'; document.getElementById('tab-btn-env').className='px-3.5 py-2 font-medium text-slate-400 hover:text-slate-200 flex items-center gap-1.5';"
+                <button type="button"
+                        @click="setTab('yaml')"
+                        :class="tab === 'yaml'
+                            ? 'px-3.5 py-2 font-medium border-b-2 border-sky-500 text-white flex items-center gap-1.5'
+                            : 'px-3.5 py-2 font-medium text-slate-400 hover:text-slate-200 flex items-center gap-1.5'"
                         class="px-3.5 py-2 font-medium border-b-2 border-sky-500 text-white flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     compose.yaml
                 </button>
-                <button type="button" id="tab-btn-env"
-                        onclick="document.getElementById('panel-env').classList.remove('hidden'); document.getElementById('panel-yaml').classList.add('hidden'); this.className='px-3.5 py-2 font-medium border-b-2 border-sky-500 text-white flex items-center gap-1.5'; document.getElementById('tab-btn-yaml').className='px-3.5 py-2 font-medium text-slate-400 hover:text-slate-200 flex items-center gap-1.5';"
+                <button type="button"
+                        @click="setTab('env')"
+                        :class="tab === 'env'
+                            ? 'px-3.5 py-2 font-medium border-b-2 border-sky-500 text-white flex items-center gap-1.5'
+                            : 'px-3.5 py-2 font-medium text-slate-400 hover:text-slate-200 flex items-center gap-1.5'"
                         class="px-3.5 py-2 font-medium text-slate-400 hover:text-slate-200 flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
@@ -102,7 +111,7 @@
             </div>
 
             <!-- Compose YAML Editor Panel -->
-            <div id="panel-yaml" class="space-y-1.5">
+            <div x-show="tab === 'yaml'" class="space-y-1.5">
                 <div class="flex items-center justify-between text-xs text-slate-400 px-1">
                     <span class="font-mono text-[11px]">Sintaxe YAML • Indentação de 2 espaços</span>
                     <span class="text-slate-500 text-[11px]">Pressione Tab para identar</span>
@@ -114,13 +123,13 @@
                     spellcheck="false"
                     autocapitalize="off"
                     autocomplete="off"
-                    onkeydown="if(event.key==='Tab'){event.preventDefault();const s=this.selectionStart,e=this.selectionEnd;this.value=this.value.substring(0,s)+'  '+this.value.substring(e);this.selectionStart=this.selectionEnd=s+2;}"
+                    @keydown="indent($event)"
                     class="w-full font-mono text-xs bg-[#0a0e17] text-slate-100 p-3.5 rounded-lg border border-[#232f45] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40 transition resize-y leading-relaxed"
                     required>{{ info.compose_content }}</textarea>
             </div>
 
             <!-- .env Editor Panel -->
-            <div id="panel-env" class="hidden space-y-1.5">
+            <div x-show="tab === 'env'" class="space-y-1.5">
                 <div class="flex items-center justify-between text-xs text-slate-400 px-1">
                     <span class="font-mono text-[11px]">Variáveis de Ambiente</span>
                     <span class="text-slate-500 text-[11px]">CHAVE=valor</span>
@@ -133,13 +142,14 @@
                     autocapitalize="off"
                     autocomplete="off"
                     placeholder="# Configurações de ambiente&#10;PORT=8080&#10;DEBUG=false"
+                    @keydown="indent($event)"
                     class="w-full font-mono text-xs bg-[#0a0e17] text-slate-100 p-3.5 rounded-lg border border-[#232f45] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40 transition resize-y leading-relaxed">{{ info.env_content or '' }}</textarea>
             </div>
 
             <!-- Action Buttons Footer -->
             <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#232f45]/70">
                 <span class="text-xs text-slate-400">
-                    Padrão <strong class="text-slate-300">Dockge / Portainer Stacks</strong>
+                    Padrão <strong class="text-slate-300">Docker Compose Stacks</strong>
                 </span>
                 <div class="flex items-center gap-2">
                     <button

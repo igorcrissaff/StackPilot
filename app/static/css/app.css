@@ -1,0 +1,33 @@
+[x-cloak] {
+    display: none !important;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0c1017;
+    color: #e2e8f0;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0c1017;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #232f45;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #38bdf8;
+}
+
+.panel-glass {
+    background: rgba(22, 30, 46, 0.85);
+    backdrop-filter: blur(8px);
+}

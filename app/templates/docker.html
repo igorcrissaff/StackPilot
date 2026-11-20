@@ -28,11 +28,17 @@
 
     <main class="max-w-6xl mx-auto px-5 py-5">
         <div class="flex items-center gap-1 border-b border-[#232f45] mb-5">
-            <button type="button" id="tab-images" onclick="showDockerTab('images')"
+            <button type="button"
+                    id="tab-images"
+                    data-action="docker-tab"
+                    data-tab="images"
                     class="px-4 py-2.5 text-xs font-semibold text-sky-400 border-b-2 border-sky-500 transition">
                 Images
             </button>
-            <button type="button" id="tab-containers" onclick="showDockerTab('containers')"
+            <button type="button"
+                    id="tab-containers"
+                    data-action="docker-tab"
+                    data-tab="containers"
                     class="px-4 py-2.5 text-xs font-semibold text-slate-400 border-b-2 border-transparent hover:text-white transition">
                 Containers
             </button>
@@ -56,20 +62,4 @@
         </section>
     </main>
 </div>
-
-<script>
-    function showDockerTab(tab) {
-        const isImages = tab === 'images';
-        document.getElementById('pane-images').classList.toggle('hidden', !isImages);
-        document.getElementById('pane-containers').classList.toggle('hidden', isImages);
-        const imagesTab = document.getElementById('tab-images');
-        const containersTab = document.getElementById('tab-containers');
-        imagesTab.className = isImages
-            ? 'px-4 py-2.5 text-xs font-semibold text-sky-400 border-b-2 border-sky-500 transition'
-            : 'px-4 py-2.5 text-xs font-semibold text-slate-400 border-b-2 border-transparent hover:text-white transition';
-        containersTab.className = isImages
-            ? 'px-4 py-2.5 text-xs font-semibold text-slate-400 border-b-2 border-transparent hover:text-white transition'
-            : 'px-4 py-2.5 text-xs font-semibold text-sky-400 border-b-2 border-sky-500 transition';
-    }
-</script>
 {% endblock %}

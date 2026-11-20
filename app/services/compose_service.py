@@ -270,7 +270,7 @@ class ComposeService:
                 candidates.append(wdir / fname)
                 candidates.append(self._resolve_stacks_dir() / wdir.name / fname)
 
-        # 3. Standard Dockge / stackpilot stacks dir structure
+        # 3. Standard StackPilot stacks dir structure
         stacks_base = self._resolve_stacks_dir()
         for fname in ("compose.yaml", "compose.yml", "docker-compose.yml", "docker-compose.yaml"):
             candidates.append(stacks_base / stack_name / fname)
