@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+from fastapi import Request
 from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
@@ -8,6 +9,7 @@ from app.services.compose_service import ComposeService
 from app.services.docker_service import DockerService
 from app.services.dockerhub_service import DockerHubService
 from app.services.hub_cache import HubCache
+from app.services.metrics_collector import MetricsCollector
 from app.services.metrics_history import MetricsHistoryRepository
 from app.services.metrics_service import MetricsService
 from app.services.metrics_settings import MetricsSettingsStore
@@ -59,6 +61,18 @@ def get_metrics_settings() -> MetricsSettingsStore:
     return MetricsSettingsStore(
         _resolve_db_path(get_settings().metrics_db_path, "metrics.db")
     )
+
+
+def get_metrics_collector(request: Request) -> MetricsCollector:
+    collector = getattr(request.app.state, "metrics_collector", None)
+    if collector is None:
+        collector = MetricsCollector(
+            get_metrics_service(),
+            get_metrics_history(),
+            get_metrics_settings(),
+        )
+        request.app.state.metrics_collector = collector
+    return collector
 
 
 def get_compose_service() -> ComposeService:
