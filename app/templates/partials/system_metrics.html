@@ -1,7 +1,8 @@
 <div id="system-metrics"
      class="bg-[#161e2e] border border-[#232f45] rounded-xl p-5 shadow-xl"
      hx-get="/metrics"
-     hx-trigger="every 10s"
+     hx-trigger="every {{ interval }}s"
+     hx-include="#metrics-window"
      hx-swap="outerHTML">
     <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-[#232f45]">
         <div class="flex items-center gap-2.5">
@@ -22,10 +23,21 @@
             </div>
         </div>
         {% if metrics %}
-        <span class="text-xs text-slate-400 font-medium flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
-            atualiza a cada 10s
-        </span>
+        <div class="flex flex-wrap items-center gap-3 text-xs text-slate-400 font-medium">
+            <span class="flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+                atualiza a cada {{ interval }}s
+            </span>
+            <select id="metrics-window" name="multiplier"
+                    hx-get="/metrics" hx-include="this" hx-target="#system-metrics" hx-swap="outerHTML"
+                    class="bg-[#0f1521] border border-[#232f45] rounded-lg px-2 py-1 text-xs text-slate-200">
+                {% for n in multipliers %}
+                <option value="{{ n }}"{% if n == multiplier %} selected{% endif %}>{{ n * interval }}s</option>
+                {% endfor %}
+            </select>
+            <a href="/metrics/export.csv"
+               class="px-2 py-1 rounded-lg bg-[#0f1521] hover:bg-slate-800 border border-[#232f45] text-slate-200">Exportar CSV</a>
+        </div>
         {% endif %}
     </div>
 
@@ -106,5 +118,14 @@
         </span>
     </div>
     {% endif %}
+
+    <div class="mt-4 p-4 rounded-xl bg-[#0f1521] border border-[#232f45]">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Consumo recente</span>
+            <span class="text-[11px] text-slate-500">CPU · Memória · Disco · Swap</span>
+        </div>
+        <canvas id="metrics-chart" height="120"></canvas>
+    </div>
+    <script type="application/json" id="metrics-chart-data">{{ chart|tojson }}</script>
     {% endif %}
 </div>

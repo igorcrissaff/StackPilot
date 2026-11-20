@@ -2,7 +2,12 @@ from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
 
-from app.dependencies import get_docker_service, get_metrics_service
+from app.dependencies import (
+    get_docker_service,
+    get_metrics_collector,
+    get_metrics_service,
+    get_metrics_settings,
+)
 from app.main import app
 from app.services.metrics_service import SystemMetrics
 
@@ -56,6 +61,46 @@ def test_metrics_renders_host_data():
         assert "12.5" in r.text
         assert 'hx-get="/metrics"' in r.text
         assert "every 10s" in r.text
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_metrics_rejects_invalid_multiplier():
+    collector = MagicMock()
+    collector.chart_series.return_value = {
+        "labels": [], "cpu": [], "memory": [], "swap": [], "disk": [],
+    }
+    app.dependency_overrides[get_metrics_collector] = lambda: collector
+    try:
+        assert _client().get("/metrics?multiplier=15").status_code == 400
+        assert _client().get("/metrics?multiplier=0").status_code == 400
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_metrics_includes_chart_payload():
+    mock = MagicMock()
+    mock.collect.return_value = _metrics()
+    collector = MagicMock()
+    collector.chart_series.return_value = {
+        "labels": [1, 2],
+        "cpu": [1.0, 2.0],
+        "memory": [3.0, 4.0],
+        "swap": [0.0, 0.0],
+        "disk": [5.0, 6.0],
+    }
+    settings = MagicMock()
+    settings.get_refresh_interval.return_value = 10
+    app.dependency_overrides[get_metrics_service] = lambda: mock
+    app.dependency_overrides[get_metrics_collector] = lambda: collector
+    app.dependency_overrides[get_metrics_settings] = lambda: settings
+    try:
+        r = _client().get("/metrics?multiplier=10")
+        assert r.status_code == 200
+        assert 'id="metrics-chart-data"' in r.text
+        assert 'id="metrics-window"' in r.text
+        assert "every 10s" in r.text
+        assert 'value="10" selected' in r.text
     finally:
         app.dependency_overrides.clear()
 

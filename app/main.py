@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
@@ -7,12 +8,38 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.auth import require_auth, verify_credentials
 from app.config import get_settings
-from app.dependencies import get_docker_service, get_metrics_service, templates
+from app.dependencies import (
+    get_docker_service,
+    get_metrics_collector,
+    get_metrics_history,
+    get_metrics_service,
+    get_metrics_settings,
+    templates,
+)
 from app.routers import containers, docker, metrics
 from app.services.docker_service import DockerUnavailableError
+from app.services.metrics_collector import MetricsCollector
+from app.services.metrics_settings import DEFAULT_REFRESH_SECONDS
 
 settings = get_settings()
-app = FastAPI(title="StackPilot")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    collector = MetricsCollector(
+        get_metrics_service(),
+        get_metrics_history(),
+        get_metrics_settings(),
+    )
+    app.state.metrics_collector = collector
+    collector.start()
+    try:
+        yield
+    finally:
+        collector.stop()
+
+
+app = FastAPI(title="StackPilot", lifespan=lifespan)
 app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -58,6 +85,8 @@ def dashboard(
     user: str = Depends(require_auth),
     docker_svc=Depends(get_docker_service),
     metrics_svc=Depends(get_metrics_service),
+    metrics_settings=Depends(get_metrics_settings),
+    collector=Depends(get_metrics_collector),
 ):
     container_error = None
     images_error = None
@@ -78,6 +107,12 @@ def dashboard(
     except DockerUnavailableError as exc:
         images_error = str(exc)
 
+    try:
+        metrics_interval = metrics_settings.get_refresh_interval()
+    except Exception:
+        metrics_interval = DEFAULT_REFRESH_SECONDS
+    chart = collector.chart_series(30, metrics_interval)
+
     running_containers = sum(1 for c in containers if getattr(c, "status", "") == "running")
     stopped_containers = len(containers) - running_containers
     stacks_set = {getattr(c, "stack", None) for c in containers if getattr(c, "stack", None)}
@@ -97,5 +132,9 @@ def dashboard(
             "stacks_count": stacks_count,
             "metrics": metrics,
             "metrics_error": metrics_error,
+            "chart": chart,
+            "interval": metrics_interval,
+            "multiplier": 30,
+            "multipliers": list(range(10, 101, 10)),
         },
     )
