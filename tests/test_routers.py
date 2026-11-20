@@ -38,7 +38,7 @@ def test_dashboard_renders_containers_and_images_metric():
         assert "Compose Stacks" in resp.text
         assert "Imagens" in resp.text
         assert "Traefik Routes" not in resp.text
-        assert 'href="/settings"' not in resp.text
+        assert 'href="/settings"' in resp.text
         assert 'href="/docker"' in resp.text
         assert 'href="/static/favicon.svg"' in resp.text
     finally:
