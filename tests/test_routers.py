@@ -23,6 +23,12 @@ def test_favicon_is_served():
     assert resp.headers["content-type"].startswith("image/svg+xml")
 
 
+def test_metrics_chart_asset_served():
+    r = TestClient(app).get("/static/js/metrics_chart.js")
+    assert r.status_code == 200
+    assert "Chart" in r.text
+
+
 def test_dashboard_renders_containers_and_images_metric():
     mock_docker = MagicMock()
     mock_docker.list_containers.return_value = [
@@ -38,7 +44,7 @@ def test_dashboard_renders_containers_and_images_metric():
         assert "Compose Stacks" in resp.text
         assert "Imagens" in resp.text
         assert "Traefik Routes" not in resp.text
-        assert 'href="/settings"' not in resp.text
+        assert 'href="/settings"' in resp.text
         assert 'href="/docker"' in resp.text
         assert 'href="/static/favicon.svg"' in resp.text
     finally:
