@@ -1,27 +1,8 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="min-h-screen flex flex-col">
-    <header class="border-b border-panel-border bg-panel-card/80 backdrop-blur sticky top-0 z-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-            <div class="flex items-center gap-6">
-                <a href="/" class="flex items-center gap-2 font-semibold text-slate-100">
-                    <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
-                    StackPilot
-                </a>
-                <nav class="flex items-center gap-4 text-sm">
-                    <a href="/" class="text-slate-400 hover:text-slate-100 transition-colors">Dashboard</a>
-                    <a href="/docker" class="text-slate-400 hover:text-slate-100 transition-colors">Docker</a>
-                    <a href="/tasks" class="text-sky-400 font-medium">Tarefas</a>
-                    <a href="/settings" class="text-slate-400 hover:text-slate-100 transition-colors">Configurações</a>
-                </nav>
-            </div>
-            <form method="post" action="/logout">
-                <button type="submit" class="text-xs text-slate-400 hover:text-slate-200">Sair</button>
-            </form>
-        </div>
-    </header>
-
-    <main class="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8">
+{% extends "panel_base.html" %}
+{% set active_page = 'tasks' %}
+{% set page_title = 'Tarefas' %}
+{% block panel_content %}
+    <main class="flex-1 max-w-4xl w-full mx-auto px-6 py-6">
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h1 class="text-xl font-semibold text-slate-100">Tarefas em Segundo Plano</h1>
@@ -38,5 +19,4 @@
             {% include "partials/task_list.html" %}
         </div>
     </main>
-</div>
 {% endblock %}

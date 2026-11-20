@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block content %}
+{% set current_page = active_page|default('dashboard') %}
+<div class="flex h-screen overflow-hidden bg-[#0c1017]">
+    <!-- Left Sidebar -->
+    <aside class="w-64 bg-[#111722] border-r border-[#232f45] shrink-0 flex flex-col justify-between hidden lg:flex select-none z-30">
+        <div>
+            <!-- Sidebar Header / Brand -->
+            <div class="h-16 flex items-center gap-3 px-5 border-b border-[#232f45] bg-[#0e141f]">
+                <a href="/" class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-600 to-cyan-400 p-0.5 flex items-center justify-center shadow-lg shadow-sky-500/10">
+                    <div class="w-full h-full bg-[#111722] rounded-[10px] flex items-center justify-center">
+                        <svg class="w-5 h-5 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                        </svg>
+                    </div>
+                </a>
+                <div class="flex items-center gap-2">
+                    <a href="/" class="font-bold text-base tracking-tight text-white">StackPilot</a>
+                    <span class="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-sky-500/15 text-sky-400 border border-sky-500/30 rounded">CE</span>
+                </div>
+            </div>
+
+            <!-- Environment Selector -->
+            <div class="p-3 border-b border-[#232f45]/70">
+                <div class="p-2.5 rounded-lg bg-[#161e2e] border border-[#232f45] flex items-center justify-between">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-lg" aria-hidden="true">🖥️</span>
+                        <div class="min-w-0">
+                            <span class="block text-xs font-semibold text-white truncate">local</span>
+                            <span class="block text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
+                                standalone
+                            </span>
+                            <span class="block text-[10px] text-slate-400 truncate" title="Sistema operacional do host">SO: {{ host["host_os"]|default('Não informado', true) if host is defined else 'Não informado' }}</span>
+                        </div>
+                    </div>
+                    <span class="text-[10px] font-mono text-slate-500 bg-[#0f1521] px-1.5 py-0.5 rounded border border-[#232f45]">Docker</span>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="p-3 space-y-6">
+                <!-- Group: OVERVIEW -->
+                <div>
+                    <span class="px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">Visão Geral</span>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="/"
+                               class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition {% if current_page == 'dashboard' %}bg-sky-500/10 text-sky-400 border-l-2 border-sky-500{% else %}text-slate-300 hover:text-white hover:bg-[#161e2e]{% endif %}">
+                                <svg class="w-4 h-4 {% if current_page == 'dashboard' %}text-sky-400{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                                </svg>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Group: DOCKER / STACKS -->
+                <div>
+                    <span class="px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">Docker &amp; Stacks</span>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="/#containers-section"
+                               class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-[#161e2e] transition">
+                                <div class="flex items-center gap-2.5">
+                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                    </svg>
+                                    <span>Containers</span>
+                                </div>
+                                {% if containers is defined %}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#232f45] text-slate-300">
+                                    {{ containers|length }}
+                                </span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/docker"
+                               class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition {% if current_page == 'docker' %}bg-sky-500/10 text-sky-400 border-l-2 border-sky-500{% else %}text-slate-300 hover:text-white hover:bg-[#161e2e]{% endif %}">
+                                <div class="flex items-center gap-2.5">
+                                    <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+                                    </svg>
+                                    <span>Docker</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/tasks"
+                               class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition {% if current_page == 'tasks' %}bg-sky-500/10 text-sky-400 border-l-2 border-sky-500{% else %}text-slate-300 hover:text-white hover:bg-[#161e2e]{% endif %}">
+                                <div class="flex items-center gap-2.5">
+                                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                    </svg>
+                                    <span>Tarefas</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/#containers-section"
+                               class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-[#161e2e] transition">
+                                <div class="flex items-center gap-2.5">
+                                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                                    </svg>
+                                    <span>Compose Stacks</span>
+                                </div>
+                                {% if stacks_count is defined %}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                                    {{ stacks_count }}
+                                </span>
+                                {% endif %}
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Group: SETTINGS -->
+                <div>
+                    <span class="px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">Sistema</span>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="/settings"
+                               class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition {% if current_page == 'settings' %}bg-sky-500/10 text-sky-400 border-l-2 border-sky-500{% else %}text-slate-300 hover:text-white hover:bg-[#161e2e]{% endif %}">
+                                <div class="flex items-center gap-2.5">
+                                    <svg class="w-4 h-4 {% if current_page == 'settings' %}text-sky-400{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    <span>Configurações</span>
+                                </div>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Sidebar Footer / User Profile -->
+        <div class="p-3 border-t border-[#232f45] bg-[#0e141f]">
+            <div class="flex items-center justify-between gap-2 p-2 rounded-lg bg-[#161e2e] border border-[#232f45]">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm">
+                        {{ (user|default('A'))[:1]|upper }}
+                    </div>
+                    <div class="min-w-0">
+                        <span class="block text-xs font-semibold text-white truncate">{{ user|default('admin') }}</span>
+                        <span class="block text-[10px] text-slate-400 truncate">Administrador</span>
+                    </div>
+                </div>
+                <form method="post" action="/logout">
+                    <button type="submit"
+                            title="Desconectar do painel"
+                            class="p-1.5 rounded-md hover:bg-red-500/15 text-slate-400 hover:text-red-400 border border-transparent hover:border-red-500/30 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Mobile Sidebar Drawer Overlay -->
+    <div id="mobile-drawer" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm lg:hidden hidden"
+         data-drawer-overlay>
+        <div class="w-64 h-full bg-[#111722] border-r border-[#232f45] flex flex-col justify-between p-4">
+            <div>
+                <div class="flex items-center justify-between pb-4 border-b border-[#232f45]">
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-white">StackPilot</span>
+                        <span class="px-1.5 py-0.5 text-[10px] font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/30 rounded">CE</span>
+                    </div>
+                    <button type="button" data-action="close-drawer" data-drawer="mobile-drawer"
+                            class="text-slate-400 hover:text-white p-1">✕</button>
+                </div>
+                <div class="py-4 space-y-2">
+                    <a href="/" data-action="close-drawer" data-drawer="mobile-drawer"
+                       class="block px-3 py-2 rounded-lg text-xs font-medium {% if current_page == 'dashboard' %}bg-sky-500/10 text-sky-400{% else %}text-slate-300 hover:bg-[#161e2e]{% endif %}">Dashboard</a>
+                    <a href="/docker" data-action="close-drawer" data-drawer="mobile-drawer"
+                       class="block px-3 py-2 rounded-lg text-xs font-medium {% if current_page == 'docker' %}bg-sky-500/10 text-sky-400{% else %}text-slate-300 hover:bg-[#161e2e]{% endif %}">Docker</a>
+                    <a href="/tasks" data-action="close-drawer" data-drawer="mobile-drawer"
+                       class="block px-3 py-2 rounded-lg text-xs font-medium {% if current_page == 'tasks' %}bg-sky-500/10 text-sky-400{% else %}text-slate-300 hover:bg-[#161e2e]{% endif %}">Tarefas</a>
+                    <a href="/settings" data-action="close-drawer" data-drawer="mobile-drawer"
+                       class="block px-3 py-2 rounded-lg text-xs font-medium {% if current_page == 'settings' %}bg-sky-500/10 text-sky-400{% else %}text-slate-300 hover:bg-[#161e2e]{% endif %}">Configurações</a>
+                    <a href="/#containers-section" data-action="close-drawer" data-drawer="mobile-drawer"
+                       class="block px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-[#161e2e]">Containers</a>
+                </div>
+            </div>
+            <form method="post" action="/logout">
+                <button type="submit" class="w-full py-2 px-3 rounded-lg bg-red-600/20 text-red-300 border border-red-500/30 text-xs font-medium">Logout</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <!-- Top Bar -->
+        <header class="h-16 bg-[#161e2e]/90 backdrop-blur border-b border-[#232f45] flex items-center justify-between px-6 sticky top-0 z-20 shrink-0">
+            <!-- Breadcrumbs & Mobile Toggle -->
+            <div class="flex items-center gap-3 text-xs">
+                <button type="button"
+                        data-action="toggle-drawer"
+                        data-drawer="mobile-drawer"
+                        class="p-1.5 rounded-lg bg-[#0f1521] hover:bg-slate-800 border border-[#232f45] text-slate-400 hover:text-white lg:hidden transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <span class="text-slate-400 hidden sm:inline">Ambiente:</span>
+                <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/30 flex items-center gap-1">
+                    <span>🐳</span> local
+                </span>
+                <span class="text-slate-600">/</span>
+                <span class="text-white font-medium">{{ page_title|default('Dashboard') }}</span>
+            </div>
+
+            <!-- Right Controls -->
+            <div class="flex items-center gap-4">
+                <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Docker Socket Online
+                </span>
+
+                <div class="h-4 w-px bg-[#232f45] hidden sm:block"></div>
+
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-300 font-medium hidden sm:inline">{{ user|default('admin') }}</span>
+                    <form method="post" action="/logout">
+                        <button type="submit"
+                                class="px-3 py-1.5 rounded-lg bg-[#0f1521] hover:bg-red-500/15 text-slate-300 hover:text-red-400 border border-[#232f45] hover:border-red-500/30 text-xs font-medium transition flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                            <span>Logout</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </header>
+
+        {% block panel_content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}

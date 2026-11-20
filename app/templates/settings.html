@@ -1,18 +1,8 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="min-h-screen">
-    <header class="border-b border-[#232f45] bg-[#111722]">
-        <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div>
-                <h1 class="text-lg font-bold text-white">Configurações</h1>
-                <p class="text-xs text-slate-400">Ajustes do StackPilot</p>
-            </div>
-            <a href="/" class="px-3 py-1.5 rounded-md bg-[#161e2e] border border-[#232f45] text-xs text-slate-300 hover:text-white hover:border-sky-500/50 transition">Voltar ao Dashboard</a>
-        </div>
-    </header>
-
-    <main class="max-w-4xl mx-auto p-6">
+{% extends "panel_base.html" %}
+{% set active_page = 'settings' %}
+{% set page_title = 'Configurações' %}
+{% block panel_content %}
+    <main class="max-w-4xl w-full mx-auto p-6">
         {% include "partials/metrics_settings.html" %}
     </main>
-</div>
 {% endblock %}
