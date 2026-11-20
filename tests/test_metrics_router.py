@@ -103,6 +103,10 @@ def test_metrics_includes_chart_payload():
         assert 'id="metrics-window"' in r.text
         assert "every 10s" in r.text
         assert 'value="10" selected' in r.text
+        assert 'id="metrics-chart-cpu"' in r.text
+        assert 'id="metrics-chart-memory"' in r.text
+        assert 'id="metrics-chart-disk"' in r.text
+        assert 'id="metrics-chart-swap"' not in r.text
     finally:
         app.dependency_overrides.clear()
 
